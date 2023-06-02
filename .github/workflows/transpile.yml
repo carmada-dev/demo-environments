@@ -17,10 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Upgrade BICEP
-        uses: azure/CLI@v1
-        with:
-          inlineScript: az bicep upgrade
+      - name: Install BICEP
+        uses: anthony-c-martin/setup-bicep@v0.1
 
       - name: Transpile BICEP to ARM
         run: |
