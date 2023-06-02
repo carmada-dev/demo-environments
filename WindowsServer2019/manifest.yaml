@@ -1,0 +1,6 @@
+name: WindowsServer2019
+version: 1.0.0
+summary: Windows Server 2019 SingleBox
+description: ...
+runner: ARM
+templatePath: azuredeploy.json

@@ -1,0 +1,6 @@
+name: DockerWebSite
+version: 1.0.0
+summary: Private app service running a docker container
+description: ...
+runner: ARM
+templatePath: azuredeploy.json

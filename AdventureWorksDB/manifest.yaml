@@ -1,0 +1,6 @@
+name: AdventureWorksDB
+version: 1.0.0
+summary: Sample Azure SQL database
+description: Deploys an Azure SQL database pre-filled with the AdventureWorks dataset
+runner: ARM
+templatePath: azuredeploy.json

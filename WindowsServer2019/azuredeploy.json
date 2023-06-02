@@ -1,0 +1,158 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.14.85.62628",
+      "templateHash": "17007607417290336085"
+    }
+  },
+  "parameters": {
+    "VmAdminUsername": {
+      "type": "string"
+    },
+    "VmAdminPassword": {
+      "type": "securestring"
+    },
+    "VmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2_v3"
+    }
+  },
+  "variables": {
+    "ResourceLocation": "[resourceGroup().location]",
+    "ResourcePrefix": "[uniqueString(resourceGroup().id)]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2021-05-01",
+      "name": "[variables('ResourcePrefix')]",
+      "location": "[variables('ResourceLocation')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipConfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2020-10-01').outputs.Settings.value.EnvironmentNetworkId, '/')[2], split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2020-10-01').outputs.Settings.value.EnvironmentNetworkId, '/')[4]), 'Microsoft.Network/virtualNetworks/subnets', last(split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2020-10-01').outputs.Settings.value.EnvironmentNetworkId, '/')), 'default')]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2021-11-01",
+      "name": "[variables('ResourcePrefix')]",
+      "location": "[variables('ResourceLocation')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('VmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('ResourcePrefix')]",
+          "adminUsername": "[parameters('VmAdminUsername')]",
+          "adminPassword": "[parameters('VmAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2019-Datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[format('{0}-OsDisk', variables('ResourcePrefix'))]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "StandardSSD_LRS"
+            },
+            "diskSizeGB": 1024
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('ResourcePrefix'))]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('ResourcePrefix'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.14.85.62628",
+              "templateHash": "15134218718608586232"
+            }
+          },
+          "variables": {
+            "$fxv#0": "outputJson=$(az appconfig kv list --endpoint \"$ConfigurationStore\" --auth-mode login --resolve-keyvault --label \"$EnvironmentType,\\0\" --only-show-errors 2>&1)\n\n(echo $outputJson | jq -e . >/dev/null 2>&1) \\\n\t&& (echo $outputJson | jq 'map({ (.key|tostring): .value }) | add' > $AZ_SCRIPTS_OUTPUT_PATH) \\\n\t|| (jq -n --arg e \"$outputJson\" '{error: $e}' > $AZ_SCRIPTS_OUTPUT_PATH)\n\n"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "EnvironmentSettings",
+              "location": "[resourceGroup().location]",
+              "kind": "AzureCLI",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', resourceGroup().tags.EnvironmentDeployerId)]": {}
+                }
+              },
+              "properties": {
+                "forceUpdateTag": "[guid(resourceGroup().id)]",
+                "azCliVersion": "2.42.0",
+                "timeout": "PT30M",
+                "environmentVariables": [
+                  {
+                    "name": "ConfigurationStore",
+                    "value": "[resourceGroup().tags.ProjectConfigurationUrl]"
+                  },
+                  {
+                    "name": "EnvironmentType",
+                    "value": "[resourceGroup().tags.EnvironmentTypeName]"
+                  }
+                ],
+                "scriptContent": "[variables('$fxv#0')]",
+                "cleanupPreference": "Always",
+                "retentionInterval": "P1D"
+              }
+            }
+          ],
+          "outputs": {
+            "Settings": {
+              "type": "object",
+              "value": "[reference(resourceId('Microsoft.Resources/deploymentScripts', 'EnvironmentSettings'), '2020-10-01').outputs]"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

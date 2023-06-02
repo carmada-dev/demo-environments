@@ -1,0 +1,6 @@
+name: Xperimental
+version: 1.0.0
+summary: Scratchpad for new stuff
+description: Use this just for testing
+runner: ARM
+templatePath: azuredeploy.json
