@@ -1,5 +1,20 @@
 RESET='false'
 DELETE='false'
+PLAN='false'
+
+while getopts 'e:prd' OPT; do
+    case "$OPT" in
+		e)
+			ENVIRONMENT="${OPTARG}" ;;
+		p)
+			PLAN='true' ;;
+		r)
+			RESET='true' ;;
+		d)
+			DELETE='true' ;;
+
+    esac
+done
 
 displayHeader() {
 	echo -e "\n======================================================================================"
@@ -11,45 +26,47 @@ deployEnvironment() {
 
 	pushd "$(dirname "$1")" > /dev/null
 
+	VAR_ARGS=(
+		"$([ -f './development.tfvars' ] && echo '-var-file=./development.tfvars' || echo '')"
+		"-var=resource_group_name=$(basename "$PWD")"
+	)
+
 	displayHeader "Initialize terraform ..."
 	[ -d "./.terraform" ] && terraform init -upgrade || terraform init 
 
 	displayHeader "Validate template ..."
 	terraform validate || exit
 
-	if [ "$DELETE" = "true" ] || [ "$RESET" = "true" ]; then
+	if [ "$PLAN" = "true" ]; then
 
-		displayHeader "Deprovision environment ..."
-		terraform apply -auto-approve -destroy || exit
+		displayHeader "Plan provisioning ..."
+		terraform plan $(printf " %s" "${VAR_ARGS[@]}") || exit
 
-	fi
+	else
 
-	if [ "$DELETE" = "false" ]; then
+		if [ "$DELETE" = "true" ] || [ "$RESET" = "true" ]; then
 
-		displayHeader "Provision environment ..."
-		terraform apply -auto-approve || exit
+			displayHeader "Deprovision environment ..."
+			terraform apply -auto-approve -destroy $(printf " %s" "${VAR_ARGS[@]}") || exit
 
-	fi
+		fi
+
+		if [ "$DELETE" = "false" ]; then
+
+			displayHeader "Ensure environment RG ..."
+			az group create --name $(basename "$PWD") --location 'West Europe' --query 'id' -o tsv
+
+			displayHeader "Provision environment ..."
+			terraform apply -auto-approve $(printf " %s" "${VAR_ARGS[@]}") || exit
+
+		fi
+	fi 
 
 	popd > /dev/null
 
 }
 
 clear 
-
-while getopts 'e:rd' OPT; do
-    case "$OPT" in
-		e)
-			ENVIRONMENT="${OPTARG}" ;;
-		r)
-			RESET='true' ;;
-		d)
-			DELETE='true' ;;
-		*) 
-			usage ;;
-    esac
-done
-
 
 while read ENVIRONMENTPATH; do
 
