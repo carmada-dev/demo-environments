@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.14.85.62628",
-      "templateHash": "15739851628429161328"
+      "version": "0.17.1.54307",
+      "templateHash": "15050776055779576051"
     }
   },
   "parameters": {
@@ -60,7 +60,7 @@
       "location": "[variables('ResourceLocation')]",
       "properties": {
         "subnet": {
-          "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2020-10-01').outputs.Settings.value.EnvironmentNetworkId, '/')[2], split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2020-10-01').outputs.Settings.value.EnvironmentNetworkId, '/')[4]), 'Microsoft.Network/virtualNetworks/subnets', last(split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2020-10-01').outputs.Settings.value.EnvironmentNetworkId, '/')), 'default')]"
+          "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2022-09-01').outputs.Settings.value.EnvironmentNetworkId, '/')[2], split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2022-09-01').outputs.Settings.value.EnvironmentNetworkId, '/')[4]), 'Microsoft.Network/virtualNetworks/subnets', last(split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))), '2022-09-01').outputs.Settings.value.EnvironmentNetworkId, '/')), 'default')]"
         },
         "privateLinkServiceConnections": [
           {
@@ -81,7 +81,7 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('{0}_{1}', take(deployment().name, 36), uniqueString('privatelinkDnsZone'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -99,8 +99,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.14.85.62628",
-              "templateHash": "935541726627754408"
+              "version": "0.17.1.54307",
+              "templateHash": "945895535741524879"
             }
           },
           "parameters": {
@@ -131,11 +131,11 @@
                 "environmentVariables": [
                   {
                     "name": "Subscription",
-                    "value": "[split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString(deployment().name))), '2020-10-01').outputs.Settings.value.PrivateLinkResourceGroupId, '/')[2]]"
+                    "value": "[split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString(deployment().name))), '2022-09-01').outputs.Settings.value.PrivateLinkResourceGroupId, '/')[2]]"
                   },
                   {
                     "name": "ResourceGroup",
-                    "value": "[split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString(deployment().name))), '2020-10-01').outputs.Settings.value.PrivateLinkResourceGroupId, '/')[4]]"
+                    "value": "[split(reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', take(deployment().name, 36), uniqueString(deployment().name))), '2022-09-01').outputs.Settings.value.PrivateLinkResourceGroupId, '/')[4]]"
                   },
                   {
                     "name": "DNSZoneName",
@@ -152,7 +152,7 @@
             },
             {
               "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2020-10-01",
+              "apiVersion": "2022-09-01",
               "name": "[format('{0}_{1}', take(deployment().name, 36), uniqueString(deployment().name))]",
               "properties": {
                 "expressionEvaluationOptions": {
@@ -165,8 +165,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.14.85.62628",
-                      "templateHash": "15134218718608586232"
+                      "version": "0.17.1.54307",
+                      "templateHash": "440529015810140937"
                     }
                   },
                   "variables": {
@@ -226,7 +226,7 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('{0}_{1}', take(deployment().name, 36), uniqueString('EnvironmentSettings'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -239,8 +239,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.14.85.62628",
-              "templateHash": "15134218718608586232"
+              "version": "0.17.1.54307",
+              "templateHash": "440529015810140937"
             }
           },
           "variables": {
