@@ -8,5 +8,5 @@ parameters:
 - id: "DockerImage"
   name: "Docker Image"
   type: "string"
-  default: "mcr.microsoft.com/mcr/hello-world:v1.0"
+  default: "mcr.microsoft.com/appsvc/staticsite:latest"
   required: true
