@@ -5,12 +5,13 @@
     "_generator": {
       "name": "bicep",
       "version": "0.17.1.54307",
-      "templateHash": "8768480704063326523"
+      "templateHash": "6706954614655396912"
     }
   },
   "parameters": {
     "DockerImage": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/appsvc/staticsite:latest"
     }
   },
   "variables": {
