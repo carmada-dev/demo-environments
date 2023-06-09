@@ -5,25 +5,25 @@
     "_generator": {
       "name": "bicep",
       "version": "0.17.1.54307",
-      "templateHash": "16963589343646997090"
+      "templateHash": "1715635352097992987"
     }
   },
   "parameters": {
-    "dockerImage": {
+    "image": {
       "type": "string",
       "defaultValue": ""
     }
   },
   "variables": {
-    "ResourceLocation": "[resourceGroup().location]",
-    "ResourcePrefix": "[uniqueString(resourceGroup().id)]"
+    "resourceLocation": "[resourceGroup().location]",
+    "resourcePrefix": "[uniqueString(resourceGroup().id)]"
   },
   "resources": [
     {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2022-03-01",
-      "name": "[format('{0}-SRV', variables('ResourcePrefix'))]",
-      "location": "[variables('ResourceLocation')]",
+      "name": "[format('{0}-SRV', variables('resourcePrefix'))]",
+      "location": "[variables('resourceLocation')]",
       "kind": "linux",
       "properties": {
         "reserved": true
@@ -36,17 +36,17 @@
     {
       "type": "Microsoft.Web/sites",
       "apiVersion": "2022-03-01",
-      "name": "[format('{0}-APP', variables('ResourcePrefix'))]",
-      "location": "[variables('ResourceLocation')]",
+      "name": "[format('{0}-APP', variables('resourcePrefix'))]",
+      "location": "[variables('resourceLocation')]",
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('{0}-SRV', variables('ResourcePrefix')))]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('{0}-SRV', variables('resourcePrefix')))]",
         "siteConfig": {
           "appSettings": [],
-          "linuxFxVersion": "[format('DOCKER|{0}', parameters('dockerImage'))]"
+          "linuxFxVersion": "[format('DOCKER|{0}', parameters('image'))]"
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', format('{0}-SRV', variables('ResourcePrefix')))]"
+        "[resourceId('Microsoft.Web/serverfarms', format('{0}-SRV', variables('resourcePrefix')))]"
       ]
     }
   ]
