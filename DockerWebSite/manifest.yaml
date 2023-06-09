@@ -9,4 +9,3 @@ parameters:
   name: "Docker Image"
   type: "string"
   default: "mcr.microsoft.com/appsvc/staticsite:latest"
-  required: true
