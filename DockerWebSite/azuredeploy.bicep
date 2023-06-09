@@ -2,7 +2,7 @@ targetScope = 'resourceGroup'
 
 // ============================================================================================
 
-param DockerImage string
+param DockerImage string = 'mcr.microsoft.com/appsvc/staticsite:latest'
 
 // ============================================================================================
 
