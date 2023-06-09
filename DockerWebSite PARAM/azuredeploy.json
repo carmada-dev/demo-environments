@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.17.1.54307",
+      "templateHash": "6706954614655396912"
+    }
+  },
+  "parameters": {
+    "DockerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/appsvc/staticsite:latest"
+    }
+  },
+  "variables": {
+    "ResourceLocation": "[resourceGroup().location]",
+    "ResourcePrefix": "[uniqueString(resourceGroup().id)]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "[format('{0}-SRV', variables('ResourcePrefix'))]",
+      "location": "[variables('ResourceLocation')]",
+      "kind": "linux",
+      "properties": {
+        "reserved": true
+      },
+      "sku": {
+        "name": "B1",
+        "tier": "Basic"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[format('{0}-APP', variables('ResourcePrefix'))]",
+      "location": "[variables('ResourceLocation')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('{0}-SRV', variables('ResourcePrefix')))]",
+        "siteConfig": {
+          "appSettings": [],
+          "linuxFxVersion": "[format('DOCKER|{0}', parameters('DockerImage'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', format('{0}-SRV', variables('ResourcePrefix')))]"
+      ]
+    }
+  ]
+}
