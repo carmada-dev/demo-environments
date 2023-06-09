@@ -1,0 +1,7 @@
+name: HipsterTF
+version: 1.0.0
+summary: Experimental Environment
+description: Experimental Environment
+runner: Terraform
+templatePath: main.tf
+parameters: 
