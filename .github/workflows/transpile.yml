@@ -2,9 +2,12 @@
 name: TRANSPILE
 
 on:
-
   push:
     branches: [ "main" ]
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
@@ -23,7 +26,7 @@ jobs:
       - name: Transpile BICEP to ARM
         run: |
           for TEMPLATE in $(find . -type f -name 'azuredeploy.bicep'); do
-            pushd $(dirname $TEMPLATE) > /dev/null
+            pushd $(dirname "$TEMPLATE") > /dev/null
             echo "Transpiling template in '$(pwd)' ..."
             az bicep build --file ./azuredeploy.bicep --outfile ./azuredeploy.json --only-show-errors
             popd > /dev/null
