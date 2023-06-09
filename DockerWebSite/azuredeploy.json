@@ -5,13 +5,13 @@
     "_generator": {
       "name": "bicep",
       "version": "0.17.1.54307",
-      "templateHash": "1715635352097992987"
+      "templateHash": "6049537241697805494"
     }
   },
   "parameters": {
     "image": {
       "type": "string",
-      "defaultValue": ""
+      "defaultValue": "mcr.microsoft.com/appsvc/staticsite:latest"
     }
   },
   "variables": {
