@@ -4,3 +4,9 @@ summary: Private app service running a docker container
 description: ...
 runner: ARM
 templatePath: azuredeploy.json
+parameters: 
+- id: "DockerImage"
+  name: "Docker Image"
+  type: "string"
+  default: "mcr.microsoft.com/mcr/hello-world:v1.0"
+  required: true
