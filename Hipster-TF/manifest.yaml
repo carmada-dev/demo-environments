@@ -4,4 +4,8 @@ summary: Experimental Environment
 description: Experimental Environment
 runner: Terraform
 templatePath: main.tf
-parameters: 
+# parameters: 
+# - id: "sonarqube_admin_password"
+#   name: "SonarQube Admin Password"
+#   type: "string"
+#   required: true
