@@ -2,7 +2,7 @@ targetScope = 'resourceGroup'
 
 // ============================================================================================
 
-param DockerImage string = ''
+param dockerImage string = ''
 
 // ============================================================================================
 
@@ -32,7 +32,7 @@ resource webSite 'Microsoft.Web/sites@2022-03-01' = {
     serverFarmId: webServer.id
     siteConfig: {
       appSettings: []
-      linuxFxVersion: 'DOCKER|${DockerImage}'
+      linuxFxVersion: 'DOCKER|${dockerImage}'
     }
   }
 }

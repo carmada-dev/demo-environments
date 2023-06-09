@@ -9,7 +9,7 @@ runner: ARM
 templatePath: azuredeploy.json
 
 parameters: 
-- id: "DockerImage"
-  name: "Docker Image"
-  type: "string"
-  default: "mcr.microsoft.com/appsvc/staticsite:latest"
+- id: dockerImage
+  name: 'Docker Image'
+  type: string
+  default: 'mcr.microsoft.com/appsvc/staticsite:latest'
