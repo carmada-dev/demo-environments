@@ -24,7 +24,7 @@ jobs:
         uses: anthony-c-martin/setup-bicep@v0.1
 
       - name: Transpile BICEP to ARM
-        run: ./transpile.sh
+        run: chmod +x ./transpile.sh && ./transpile.sh
 
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v4
