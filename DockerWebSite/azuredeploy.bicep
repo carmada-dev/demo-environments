@@ -1,4 +1,4 @@
-param image string = 'mcr.microsoft.com/appsvc/staticsite:latest'
+param image string
 
 #disable-next-line no-loc-expr-outside-params
 var resourceLocation = resourceGroup().location
@@ -26,7 +26,7 @@ resource webSite 'Microsoft.Web/sites@2022-03-01' = {
     serverFarmId: webServer.id
     siteConfig: {
       appSettings: []
-      linuxFxVersion: 'DOCKER|${image}'
+      linuxFxVersion: 'DOCKER|${trim(image)}'
     }
   }
 }
