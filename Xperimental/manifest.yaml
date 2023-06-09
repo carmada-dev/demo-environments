@@ -1,6 +1,15 @@
-name: Xperimental
+# yaml-language-server: $schema=https://github.com/Azure/deployment-environments/releases/download/2022-11-11-preview/manifest.schema.json
+
+name: HipsterTF
 version: 1.0.0
-summary: Scratchpad for new stuff
-description: Use this just for testing
-runner: ARM
-templatePath: azuredeploy.json
+summary: Experimental Environment
+description: Experimental Environment
+
+runner: Terraform
+templatePath: main.tf
+
+# parameters: 
+# - id: "sonarqube_admin_password"
+#   name: "SonarQube Admin Password"
+#   type: "string"
+#   required: true

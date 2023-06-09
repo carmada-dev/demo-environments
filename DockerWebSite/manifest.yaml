@@ -1,9 +1,13 @@
+# yaml-language-server: $schema=https://github.com/Azure/deployment-environments/releases/download/2022-11-11-preview/manifest.schema.json
+
 name: DockerWebSite
 version: 1.0.0
 summary: Private app service running a docker container
 description: ...
+
 runner: ARM
 templatePath: azuredeploy.json
+
 parameters: 
 - id: "DockerImage"
   name: "Docker Image"
