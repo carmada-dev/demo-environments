@@ -9,7 +9,7 @@
     }
   },
   "parameters": {
-    "DockerImage": {
+    "dockerImage": {
       "type": "string",
       "defaultValue": ""
     }
@@ -42,7 +42,7 @@
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('{0}-SRV', variables('ResourcePrefix')))]",
         "siteConfig": {
           "appSettings": [],
-          "linuxFxVersion": "[format('DOCKER|{0}', parameters('DockerImage'))]"
+          "linuxFxVersion": "[format('DOCKER|{0}', parameters('dockerImage'))]"
         }
       },
       "dependsOn": [
