@@ -2,8 +2,10 @@ RESET='false'
 DELETE='false'
 PLAN='false'
 
-while getopts 'e:prd' OPT; do
+while getopts 's:e:prd' OPT; do
     case "$OPT" in
+		s)
+			SUBSCRIPTION="${OPTARG}" ;;
 		e)
 			ENVIRONMENT="${OPTARG}" ;;
 		p)
@@ -68,8 +70,20 @@ deployEnvironment() {
 
 clear 
 
+BASE_SUBSCRIPTION=$(az account show --query id -o tsv)
+
+if [ ! -z "$SUBSCRIPTION" ]; then
+	displayHeader "Switching Subscription ..."
+	az account set -n $SUBSCRIPTION && az account show --query name -o tsv
+fi
+
 while read ENVIRONMENTPATH; do
 
 	[[ -z "$ENVIRONMENT" || "$(echo "$ENVIRONMENT" | tr '[:upper:]' '[:lower:]')" == "$(echo "$(basename $(dirname $ENVIRONMENTPATH))" | tr '[:upper:]' '[:lower:]')" ]] && deployEnvironment $ENVIRONMENTPATH
 
 done < <(find . -type f -path './*/main.tf')
+
+if [ "$BASE_SUBSCRIPTION" != "$(az account show --query id -o tsv)" ]; then
+	displayHeader "Switching Subscription ..."
+	az account set -n $BASE_SUBSCRIPTION --query name -o tsv
+fi
