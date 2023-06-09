@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 @description('Name of the Function App')
-param name string = ''
+param name string 
 
 @description('Location to deploy the environment resources')
 param location string = resourceGroup().location
