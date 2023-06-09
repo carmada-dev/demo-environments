@@ -1,20 +1,14 @@
-targetScope = 'resourceGroup'
-
-// ============================================================================================
-
-param dockerImage string = ''
-
-// ============================================================================================
+param image string = ''
 
 #disable-next-line no-loc-expr-outside-params
-var ResourceLocation = resourceGroup().location
-var ResourcePrefix = uniqueString(resourceGroup().id)
+var resourceLocation = resourceGroup().location
+var resourcePrefix = uniqueString(resourceGroup().id)
 
 // ============================================================================================
 
 resource webServer 'Microsoft.Web/serverfarms@2022-03-01' = {
-  name: '${ResourcePrefix}-SRV'
-  location: ResourceLocation
+  name: '${resourcePrefix}-SRV'
+  location: resourceLocation
   kind: 'linux'
   properties: {
     reserved: true
@@ -26,13 +20,13 @@ resource webServer 'Microsoft.Web/serverfarms@2022-03-01' = {
 }
 
 resource webSite 'Microsoft.Web/sites@2022-03-01' = {
-  name: '${ResourcePrefix}-APP'
-  location: ResourceLocation
+  name: '${resourcePrefix}-APP'
+  location: resourceLocation
   properties: {
     serverFarmId: webServer.id
     siteConfig: {
       appSettings: []
-      linuxFxVersion: 'DOCKER|${dockerImage}'
+      linuxFxVersion: 'DOCKER|${image}'
     }
   }
 }
