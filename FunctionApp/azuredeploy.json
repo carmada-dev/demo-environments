@@ -11,7 +11,7 @@
   "parameters": {
     "name": {
       "type": "string",
-      "defaultValue": "",
+      // "defaultValue": "",
       "metadata": {
         "description": "Name of the Function App"
       }
