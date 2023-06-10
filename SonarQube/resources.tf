@@ -1,3 +1,5 @@
+data "azuread_client_config" "Current" {}
+data "azuread_application_published_app_ids" "well_known" {}
 
 data "azurerm_resource_group" "Environment" {
   name = "${var.resource_group_name}"
@@ -85,19 +87,42 @@ resource "azurerm_mssql_firewall_rule" "SonarQube" {
    end_ip_address   				= "0.0.0.0"
 }
 
-resource "null_resource" "SonarQubeInit" {
+resource "azuread_application" "SonarQube" {
+  display_name 						= "${azurerm_linux_web_app.SonarQube.default_hostname}"
+  identifier_uris  					= [ "api://${azurerm_linux_web_app.SonarQube.default_hostname}" ]
+  owners 							= [ data.azuread_client_config.current.object_id ]
+  sign_in_audience 					= "AzureADMyOrg"
 
-	triggers = {
-		shell_hash = "${filesha256("${path.module}/scripts/InitSonarQube.sh")}"
+  api {
+	oauth2_permission_scope {
+	  
 	}
-
-	provisioner "local-exec" {
-		interpreter = [ "/bin/bash", "-c" ]
-		command  = "${path.module}/scripts/InitSonarQube.sh -h ${azurerm_linux_web_app.SonarQube.default_hostname} -p ${var.sonarqube_admin_password}"
-	}
-
-	depends_on = [ 
-		azurerm_mssql_database.SonarQube,
-		azurerm_mssql_firewall_rule.SonarQube 
-	]
+  }
 }
+
+resource "azuread_service_principal" "SonarQube" {
+  application_id = "${azuread_application.SonarQube.app.application_id}"
+  owners = [ data.azuread_client_config.current.object_id ]
+}
+
+resource "azuread_service_principal_password" "SonarQube" {
+  service_principal_id = "${azuread_service_principal.app.id}"
+  end_date_relative = "87660h"
+}
+
+# resource "null_resource" "SonarQubeInit" {
+
+# 	triggers = {
+# 		shell_hash = "${filesha256("${path.module}/scripts/InitSonarQube.sh")}"
+# 	}
+
+# 	provisioner "local-exec" {
+# 		interpreter = [ "/bin/bash", "-c" ]
+# 		command  = "${path.module}/scripts/InitSonarQube.sh -h ${azurerm_linux_web_app.SonarQube.default_hostname} -p ${var.sonarqube_admin_password} -c ${azuread_application.SonarQube.app.application_id} -s "
+# 	}
+
+# 	depends_on = [ 
+# 		azurerm_mssql_database.SonarQube,
+# 		azurerm_mssql_firewall_rule.SonarQube 
+# 	]
+# }

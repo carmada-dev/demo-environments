@@ -1,11 +1,15 @@
 #!/bin/bash
 
-while getopts 'h:p:' OPT; do
+while getopts 'h:p:c:s:' OPT; do
     case "$OPT" in
 		h)
 			HOSTNAME="${OPTARG}" ;;
 		p)
 			PASSWORD="${OPTARG}" ;;
+		c)
+			CLIENTID="${OPTARG}" ;;
+		s)
+			CLIENTSECRET="${OPTARG}" ;;
     esac
 done
 
@@ -32,8 +36,8 @@ setSonarQubeConfigValue() {
 
 echo "Registering Application '$HOSTNAME' ..."
 TENANTID=$(az account show --query tenantId -o tsv)
-CLIENTID=$(az ad app create --display-name $HOSTNAME --sign-in-audience AzureADMyOrg --identifier-uris "api://$HOSTNAME" --web-home-page-url "https://$HOSTNAME" --web-redirect-uris "https://$HOSTNAME/oauth2/callback/aad" --query appId --output tsv)
-CLIENTSECRET=$(az ad app credential reset --id $CLIENTID --append --display-name "ADE-$(date +%s)" --years 10 --query password --output tsv)
+# CLIENTID=$(az ad app create --display-name $HOSTNAME --sign-in-audience AzureADMyOrg --identifier-uris "api://$HOSTNAME" --web-home-page-url "https://$HOSTNAME" --web-redirect-uris "https://$HOSTNAME/oauth2/callback/aad" --query appId --output tsv)
+# CLIENTSECRET=$(az ad app credential reset --id $CLIENTID --append --display-name "ADE-$(date +%s)" --years 10 --query password --output tsv)
 OBJECTID=$(az ad app show --id $CLIENTID --query objectId --output tsv)
 GRAPHID=$(az ad sp list --all --query "[?appDisplayName=='Microsoft Graph'].appId | [0]" -o tsv)
 

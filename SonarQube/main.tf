@@ -3,6 +3,9 @@ terraform {
 		azurerm = {
 			version = "=3.59.0"
 		}
+		azuread = {
+			
+		}
 	}
 }
 
