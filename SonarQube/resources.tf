@@ -1,4 +1,5 @@
 data "azuread_client_config" "Current" {}
+
 data "azuread_application_published_app_ids" "well_known" {}
 
 data "azurerm_resource_group" "Environment" {
@@ -90,7 +91,7 @@ resource "azurerm_mssql_firewall_rule" "SonarQube" {
 resource "azuread_application" "SonarQube" {
   display_name 						= "${azurerm_linux_web_app.SonarQube.default_hostname}"
   identifier_uris  					= [ "api://${azurerm_linux_web_app.SonarQube.default_hostname}" ]
-  owners 							= [ data.azuread_client_config.current.object_id ]
+  owners 							= [ data.azuread_client_config.Current.object_id ]
   sign_in_audience 					= "AzureADMyOrg"
 
   api {
@@ -101,12 +102,12 @@ resource "azuread_application" "SonarQube" {
 }
 
 resource "azuread_service_principal" "SonarQube" {
-  application_id = "${azuread_application.SonarQube.app.application_id}"
+  application_id = "${azuread_application.SonarQube.SonarQube.application_id}"
   owners = [ data.azuread_client_config.Current.object_id ]
 }
 
 resource "azuread_service_principal_password" "SonarQube" {
-  service_principal_id = "${azuread_service_principal.app.id}"
+  service_principal_id = "${azuread_service_principal.SonarQube.id}"
   end_date_relative = "87660h"
 }
 
