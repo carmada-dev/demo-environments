@@ -5,6 +5,11 @@ version: 1.0.0
 summary: Private SonarQube instance for your team
 description: Deploys a ready to use SonarQube instance with database
 
-runner: ARM
-templatePath: azuredeploy.json
+runner: Terraform
+templatePath: main.tf
 
+parameters: 
+- id: "sonarqube_admin_password"
+  name: "SonarQube Admin Password"
+  type: "string"
+  required: true
