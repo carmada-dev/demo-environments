@@ -30,12 +30,12 @@ deployEnvironment() {
 	ENVIRONMENTNAME="$ENVIRONMENT-$(date +%s)"
 
 	displayHeader "Resolve DevCenter resource group ..."
-	RESOURCEGROUP="$(az resource list --resource-typ 'Microsoft.DevCenter/devcenters' --query "[?name=='$ORGANIZATION']|[0].resourceGroup" -o tsv)"
+	RESOURCEGROUP="$(az resource list --resource-type 'Microsoft.DevCenter/devcenters' --query "[?name=='$ORGANIZATION']|[0].resourceGroup" -o tsv)"
 	[ -z "$RESOURCEGROUP" ] && >&2 echo "Unable to find resource group containing DevCenter '$ORGANIZATION'!" && exit 1 || echo $RESOURCEGROUP
 
 	displayHeader "Synchronize DevCenter catalogs ..."
 	while read CATALOGITEM; do
-		echo "- $CATALOGITEM"
+		echo "- $CATALOGITEM ..."
 		az devcenter admin catalog sync --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP --catalog-name $CATALOGITEM &
 	done < <(az devcenter admin catalog list --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP --query '[].name' -o tsv) && wait
 

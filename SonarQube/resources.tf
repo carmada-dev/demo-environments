@@ -1,22 +1,6 @@
-resource "null_resource" "Environment" {
 
-	triggers = {
-		always_run = "${timestamp()}"
-	}
-
-	provisioner "local-exec" {
-		interpreter = [ "/bin/bash", "-c" ]
-		command  = "mkdir -p '${path.module}/.temp' && az group show --resource-group ${var.resource_group_name} > '${path.module}/.temp/environment.json'"
-	}
-}
-
-data "local_file" "Environment" {
-	filename = "${path.module}/.temp/environment.json"
-  	depends_on = [ null_resource.Environment ]
-}
-
-locals {
-	environment = jsondecode(data.local_file.Environment.content)
+data "azurerm_resource_group" "Environment" {
+  name = "${var.resource_group_name}"
 }
 
 resource "random_integer" "ResourceSuffix" {
@@ -31,8 +15,8 @@ resource "random_password" "DatabasePassword" {
 
 resource "azurerm_service_plan" "SonarQube" {
 	name                	= "sonarqube${random_integer.ResourceSuffix.result}"
-	location            	= local.environment.location
-	resource_group_name 	= local.environment.name
+	location            	= data.azurerm_resource_group.Environment.location
+	resource_group_name 	= data.azurerm_resource_group.Environment.name
 
 	os_type             	= "Linux"
 	sku_name            	= "P1v2"
@@ -40,8 +24,8 @@ resource "azurerm_service_plan" "SonarQube" {
 
 resource "azurerm_linux_web_app" "SonarQube" {
 	name                	= "sonarqube${random_integer.ResourceSuffix.result}"
-	location            	= local.environment.location
-	resource_group_name 	= local.environment.name
+	location            	= data.azurerm_resource_group.Environment.location
+	resource_group_name 	= data.azurerm_resource_group.Environment.name
 	
 	service_plan_id 		= azurerm_service_plan.SonarQube.id
 	https_only 				= true
@@ -75,8 +59,8 @@ resource "azurerm_linux_web_app" "SonarQube" {
 
 resource "azurerm_mssql_server" "SonarQube" {
 	name							= "sonarqube${random_integer.ResourceSuffix.result}"
-	location            			= local.environment.location
-	resource_group_name 			= local.environment.name
+	location            			= data.azurerm_resource_group.Environment.location
+	resource_group_name 			= data.azurerm_resource_group.Environment.name
 
 	version                      	= "12.0"
 	administrator_login          	= "SonarQube"
