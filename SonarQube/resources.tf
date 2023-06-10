@@ -96,7 +96,8 @@ resource "azuread_application" "SonarQube" {
 
   api {
 	oauth2_permission_scope {
-	  
+		id 							= "e1fe6dd8-ba31-4d61-89e7-88639da4683d" 				
+	  	type                       	= "User"
 	}
   }
 }
