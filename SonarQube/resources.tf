@@ -12,8 +12,11 @@ resource "random_integer" "ResourceSuffix" {
 }
 
 resource "random_password" "DatabasePassword" {
-	length					= 16
-	special					= false
+	length					= 20
+	min_lower 				= 5
+	min_upper 				= 5
+	min_numeric 			= 5
+	min_special 			= 5
 }
 
 resource "azurerm_service_plan" "SonarQube" {

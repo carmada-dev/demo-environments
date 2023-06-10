@@ -29,15 +29,28 @@ deployEnvironment() {
 	DEBUGARG="$([ "$DEBUG" == "true" ] && echo "--debug")"
 	ENVIRONMENTNAME="$ENVIRONMENT-$(date +%s)"
 
-	displayHeader "Resolve DevCenter resource group ..."
-	RESOURCEGROUP="$(az resource list --resource-type 'Microsoft.DevCenter/devcenters' --query "[?name=='$ORGANIZATION']|[0].resourceGroup" -o tsv)"
-	[ -z "$RESOURCEGROUP" ] && >&2 echo "Unable to find resource group containing DevCenter '$ORGANIZATION'!" && exit 1 || echo $RESOURCEGROUP
+	displayHeader "Resolve DevCenter and Project resource group ..."
+	RESOURCEGROUP_DEVCENTER="$(az resource list --resource-type 'Microsoft.DevCenter/devcenters' --query "[?name=='$ORGANIZATION']|[0].resourceGroup" -o tsv)"
+	[ -z "$RESOURCEGROUP_DEVCENTER" ] && >&2 echo "Unable to find resource group containing DevCenter '$ORGANIZATION'!" && exit 1 || echo "DevCenter RG:  $RESOURCEGROUP_DEVCENTER"
+	RESOURCEGROUP_DEVPROJECT="$(az resource list --resource-type 'microsoft.devcenter/projects' --query "[?name=='$PROJECT']|[0].resourceGroup" -o tsv)"
+	[ -z "$RESOURCEGROUP_DEVPROJECT" ] && >&2 echo "Unable to find resource group containing Project '$PROJECT'!" && exit 1 || echo "DevProject RG: $RESOURCEGROUP_DEVPROJECT"
 
 	displayHeader "Synchronize DevCenter catalogs ..."
 	while read CATALOGITEM; do
 		echo "- $CATALOGITEM ..."
-		az devcenter admin catalog sync --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP --catalog-name $CATALOGITEM &
-	done < <(az devcenter admin catalog list --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP --query '[].name' -o tsv) && wait
+		az devcenter admin catalog sync --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP_DEVCENTER --catalog-name $CATALOGITEM &
+	done < <(az devcenter admin catalog list --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP_DEVCENTER --query '[].name' -o tsv) && wait
+
+	displayHeader "Ensure Azure AD permissions ..."
+	while read PRINCIPALID; do
+		echo "- $PRINCIPALID ..."
+		APPLICATIONDEVELOPER_ROLEID="cf1c38e5-3621-4004-a7cb-879624dced7c"
+		az rest \
+    		--method post \
+    		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
+    		--headers "{ 'content-type': 'application/json' }" \
+    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONDEVELOPER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }"
+	done < <(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv) && sleep 30
 
 	displayHeader "Resolve catalog name ..."
 	CATALOG="$(az devcenter dev environment-definition list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?name=='$ENVIRONMENT']|[0].catalogName" -o tsv)"
