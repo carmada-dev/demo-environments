@@ -103,7 +103,7 @@ resource "azuread_application" "SonarQube" {
 }
 
 resource "azuread_service_principal" "SonarQube" {
-  application_id = azuread_application.SonarQube.SonarQube.application_id
+  application_id = azuread_application.SonarQube.application_id
   owners = [ data.azuread_client_config.Current.object_id ]
 }
 
