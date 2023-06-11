@@ -10,10 +10,52 @@ data "azurerm_resource_group" "Environment" {
   name = "${var.resource_group_name}"
 }
 
+data "azurerm_app_configuration_key" "Settings_ProjectNetworkId" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "ProjectNetworkId"
+  label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
+}
+
 data "azurerm_app_configuration_key" "Settings_EnvironmentNetworkId" {
   configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
   key                    = "EnvironmentNetworkId"
   label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
+}
+
+data "azurerm_app_configuration_key" "Settings_PrivateLinkResourceGroupId" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "PrivateLinkDnsZoneRG"
+  label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
+}
+
+data "external" "DNSZoneDatabase" {
+	program = [ "bash", "-c", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value
+	  PROJECTNETWORKID = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
+	  ENVIRONMENTNETWORKID = data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value
+	  DNSZONENAME = "privatelink.database.windows.net"
+	}
+}
+
+data "external" "DNSZoneApplication" {
+	program = [ "bash", "-c", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value
+	  PROJECTNETWORKID = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
+	  ENVIRONMENTNETWORKID = data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value
+	  DNSZONENAME = "privatelink.azurewebsites.net"
+	}
+}
+
+data "external" "DNSZoneApplicationSCM" {
+	program = [ "bash", "-c", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value
+	  PROJECTNETWORKID = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
+	  ENVIRONMENTNETWORKID = data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value
+	  DNSZONENAME = "scm.privatelink.azurewebsites.net"
+	}
 }
 
 resource "random_integer" "ResourceSuffix" {
@@ -81,6 +123,7 @@ resource "azurerm_mssql_server" "SonarQube" {
 	version                      	= "12.0"
 	administrator_login          	= "SonarQube"
 	administrator_login_password 	= "${ random_password.DatabasePassword.result }"
+	public_network_access_enabled 	= false
 }
 
 resource "azurerm_mssql_database" "SonarQube" {
@@ -114,6 +157,11 @@ resource "azurerm_private_endpoint" "SonarQubePL_Database" {
 		private_connection_resource_id = azurerm_mssql_server.SonarQube.id
 		subresource_names = ["sqlServer"]
 	}
+
+	private_dns_zone_group {
+		name                 = "default"
+		private_dns_zone_ids = [ data.external.DNSZoneDatabase.result.DNSZONEID ]
+  	}
 }
 
 resource "azurerm_private_endpoint" "SonarQubePL_Application" {
@@ -129,6 +177,11 @@ resource "azurerm_private_endpoint" "SonarQubePL_Application" {
 		private_connection_resource_id = azurerm_linux_web_app.SonarQube.id
 		subresource_names = ["sites"]
 	}
+
+	private_dns_zone_group {
+		name                 = "default"
+		private_dns_zone_ids = [ data.external.DNSZoneApplication.result.DNSZONEID, data.external.DNSZoneApplicationSCM.result.DNSZONEID ]
+  	}
 }
 
 # resource "azuread_application" "SonarQube" {
@@ -168,13 +221,8 @@ resource "azurerm_private_endpoint" "SonarQubePL_Application" {
 
 # resource "null_resource" "SonarQubeInit" {
 
-# 	triggers = {
-# 		shell_hash = "${filesha256("${path.module}/scripts/InitSonarQube.sh")}"
-# 	}
-
 # 	provisioner "local-exec" {
 # 		interpreter = [ "/bin/bash", "-c" ]
-# 		# command = "${path.module}/scripts/InitSonarQube.sh -h ${azurerm_linux_web_app.SonarQube.default_hostname} -p ${var.sonarqube_admin_password} -c ${azuread_application.SonarQube.application_id} -s ${azuread_service_principal_password.SonarQube.value}"
 # 		command = "${path.module}/scripts/InitSonarQube.sh"
 # 		environment = {
 # 		  HOSTNAME = azurerm_linux_web_app.SonarQube.default_hostname
