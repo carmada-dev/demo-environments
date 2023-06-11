@@ -24,7 +24,7 @@ resource "random_password" "DatabasePassword" {
 }
 
 resource "azurerm_service_plan" "SonarQube" {
-	name                	= "sonarqube${random_integer.ResourceSuffix.result}"
+	name                	= "sonarqube${random_integer.ResourceSuffix.result}-srv"
 	location            	= data.azurerm_resource_group.Environment.location
 	resource_group_name 	= data.azurerm_resource_group.Environment.name
 
@@ -33,7 +33,7 @@ resource "azurerm_service_plan" "SonarQube" {
 }
 
 resource "azurerm_linux_web_app" "SonarQube" {
-	name                	= "sonarqube${random_integer.ResourceSuffix.result}"
+	name                	= "sonarqube${random_integer.ResourceSuffix.result}-web"
 	location            	= data.azurerm_resource_group.Environment.location
 	resource_group_name 	= data.azurerm_resource_group.Environment.name
 	
@@ -68,7 +68,7 @@ resource "azurerm_linux_web_app" "SonarQube" {
 }
 
 resource "azurerm_mssql_server" "SonarQube" {
-	name							= "sonarqube${random_integer.ResourceSuffix.result}"
+	name							= "sonarqube${random_integer.ResourceSuffix.result}-sql"
 	location            			= data.azurerm_resource_group.Environment.location
 	resource_group_name 			= data.azurerm_resource_group.Environment.name
 
