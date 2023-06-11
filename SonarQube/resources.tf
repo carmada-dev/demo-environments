@@ -2,6 +2,11 @@ data "azuread_client_config" "Current" {}
 
 data "azuread_application_published_app_ids" "well_known" {}
 
+resource "azuread_service_principal" "MSGraph" {
+  application_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+  use_existing   = true
+}
+
 data "azurerm_resource_group" "Environment" {
   name = "${var.resource_group_name}"
 }
@@ -97,11 +102,18 @@ resource "azuread_application" "SonarQube" {
   owners 							= [ data.azuread_client_config.Current.object_id ]
   sign_in_audience 					= "AzureADMyOrg"
 
-  api {
-	oauth2_permission_scope {
-		id 							= "e1fe6dd8-ba31-4d61-89e7-88639da4683d" 				
-	  	type                       	= "User"
-	}
+  required_resource_access {
+	resource_app_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+
+    resource_access {
+      id   = azuread_service_principal.MSGraph.app_role_ids["User.Read"]
+      type = "Role"
+    }
+
+    resource_access {
+      id   = azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.ReadBasic.All"]
+      type = "Scope"
+    }
   }
 }
 
