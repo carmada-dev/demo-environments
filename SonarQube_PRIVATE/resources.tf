@@ -112,7 +112,7 @@ resource "azurerm_private_endpoint" "SonarQubePL_Database" {
 		name = "default"
 		is_manual_connection = "false"
 		private_connection_resource_id = azurerm_mssql_server.SonarQube.id
-		subresource_names = ["sites"]
+		subresource_names = ["sqlServer"]
 	}
 }
 
@@ -127,7 +127,7 @@ resource "azurerm_private_endpoint" "SonarQubePL_Application" {
 		name = "default"
 		is_manual_connection = "false"
 		private_connection_resource_id = azurerm_linux_web_app.SonarQube.id
-		subresource_names = ["sqlServer"]
+		subresource_names = ["sites"]
 	}
 }
 

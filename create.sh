@@ -100,5 +100,5 @@ while read ENVIRONMENTPATH; do
 
 	[[ "$(echo "$ENVIRONMENT" | tr '[:upper:]' '[:lower:]')" == "$(echo "$(basename $(dirname $ENVIRONMENTPATH))" | tr '[:upper:]' '[:lower:]')" ]] && deployEnvironment $ENVIRONMENTPATH
 
-done < <(find . -type f -path './*/main.tf')
+done < <(find . -type f -path './*/manifest.yaml')
 
