@@ -89,31 +89,36 @@ resource "azurerm_mssql_database" "SonarQube" {
 }
 
 resource "azurerm_mssql_firewall_rule" "SonarQube" {
-   name             				= "FirewallRule"
-   server_id        				= azurerm_mssql_server.SonarQube.id
-   start_ip_address 				= "0.0.0.0"
-   end_ip_address   				= "0.0.0.0"
+	name             				= "FirewallRule"
+	server_id        				= azurerm_mssql_server.SonarQube.id
+	start_ip_address 				= "0.0.0.0"
+	end_ip_address   				= "0.0.0.0"
 }
 
 resource "azuread_application" "SonarQube" {
-  display_name 						= "${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
-  identifier_uris  					= [ "api://${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
-  owners 							= [ data.azuread_client_config.Current.object_id ]
-  sign_in_audience 					= "AzureADMyOrg"
+	display_name 					= "${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
+	identifier_uris  				= [ "api://${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
+	owners 							= [ data.azuread_client_config.Current.object_id ]
+	sign_in_audience 				= "AzureADMyOrg"
 
-  required_resource_access {
-	resource_app_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+	web {
+		homepage_url  = "https://${azurerm_linux_web_app.SonarQube.default_hostname}"
+		redirect_uris = ["https://${azurerm_linux_web_app.SonarQube.default_hostname}/oauth2/callback/aad"]
+	}
+	
+	required_resource_access {
+		resource_app_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
 
-    resource_access {
-      id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.Read"]
-      type = "Scope"
-    }
+		resource_access {
+			id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.Read"]
+			type = "Scope"
+		}
 
-    resource_access {
-      id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.ReadBasic.All"]
-      type = "Scope"
-    }
-  }
+		resource_access {
+			id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.ReadBasic.All"]
+			type = "Scope"
+		}
+	}
 }
 
 resource "azuread_service_principal" "SonarQube" {
