@@ -8,3 +8,22 @@ description: Deploys an Azure SQL database pre-filled with the AdventureWorks da
 runner: ARM
 templatePath: azuredeploy.json
 
+parameters: 
+- id: "DatabaseUsername"
+  name: "Database Username"
+  type: "string"
+  required: true
+
+- id: "DatabasePassword"
+  name: "Database Password"
+  type: "string"
+  required: true
+
+- id: "DatabaseSample"
+  name: "Database Sample"
+  type: "string"
+  required: true
+  allowed:
+    - AdventureWorksLT
+    - WideWorldImportersFull
+    - WideWorldImportersStd
