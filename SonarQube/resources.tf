@@ -96,8 +96,8 @@ resource "azurerm_mssql_firewall_rule" "SonarQube" {
 }
 
 resource "azuread_application" "SonarQube" {
-  display_name 						= "${azurerm_linux_web_app.SonarQube.default_hostname}"
-  identifier_uris  					= [ "api://${azurerm_linux_web_app.SonarQube.default_hostname}" ]
+  display_name 						= "${azurerm_resource_group.SonarQube.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
+  identifier_uris  					= [ "api://${azurerm_resource_group.SonarQube.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
   owners 							= [ data.azuread_client_config.Current.object_id ]
   sign_in_audience 					= "AzureADMyOrg"
 
@@ -121,24 +121,25 @@ resource "azuread_service_principal" "SonarQube" {
 
 }
 
-# resource "azuread_service_principal_password" "SonarQube" {
-#   service_principal_id = azuread_service_principal.SonarQube.id
-#   end_date_relative = "87660h"
-# }
+resource "azuread_service_principal_password" "SonarQube" {
+  service_principal_id = azuread_service_principal.SonarQube.id
+  end_date_relative = "87660h" # 10 years
+}
 
-# resource "null_resource" "SonarQubeInit" {
+resource "null_resource" "SonarQubeInit" {
 
-# 	triggers = {
-# 		shell_hash = "${filesha256("${path.module}/scripts/InitSonarQube.sh")}"
-# 	}
+	triggers = {
+		shell_hash = "${filesha256("${path.module}/scripts/InitSonarQube.sh")}"
+	}
 
-# 	provisioner "local-exec" {
-# 		interpreter = [ "/bin/bash", "-c" ]
-# 		command  = "${path.module}/scripts/InitSonarQube.sh -h ${azurerm_linux_web_app.SonarQube.default_hostname} -p ${var.sonarqube_admin_password} -c ${azuread_application.SonarQube.app.application_id} -s "
-# 	}
+	provisioner "local-exec" {
+		interpreter = [ "/bin/bash", "-c" ]
+		command  = "${path.module}/scripts/InitSonarQube.sh -h ${azurerm_linux_web_app.SonarQube.default_hostname} -p ${var.sonarqube_admin_password} -c ${azuread_application.SonarQube.app.application_id} -s ${azuread_service_principal_password.SonarQube.value}"
+		quiet = true
+	}
 
-# 	depends_on = [ 
-# 		azurerm_mssql_database.SonarQube,
-# 		azurerm_mssql_firewall_rule.SonarQube 
-# 	]
-# }
+	depends_on = [ 
+		azurerm_mssql_database.SonarQube,
+		azurerm_mssql_firewall_rule.SonarQube 
+	]
+}

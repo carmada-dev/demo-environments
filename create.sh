@@ -45,6 +45,13 @@ deployEnvironment() {
 	while read PRINCIPALID; do
 		echo "- $PRINCIPALID ..."
 
+		APPLICATIONADMINISTRATOR_ROLEID="158c047a-c907-4556-b7ef-446551a6b5f7"
+		az rest \
+    		--method post \
+    		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
+    		--headers "{ 'content-type': 'application/json' }" \
+    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONADMINISTRATOR_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" > /dev/null
+
 		APPLICATIONDEVELOPER_ROLEID="cf1c38e5-3621-4004-a7cb-879624dced7c"
 		az rest \
     		--method post \
