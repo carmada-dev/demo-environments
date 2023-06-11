@@ -11,5 +11,5 @@ done
 
 for SCRIPT in $(find $SCRIPT_DIR -type f -name '*.sh'); do
 	echo "Marking script as executable '$SCRIPT' ..."
-	git update-index --chmod=+x $SCRIPT
+	chmod +x $SCRIPT && git update-index --chmod=+x $SCRIPT
 done
