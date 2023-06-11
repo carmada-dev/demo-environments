@@ -35,13 +35,14 @@ setSonarQubeConfigValue() {
 	curl -s -o /dev/null -u admin:$PASSWORD -X POST "https://$HOSTNAME/api/settings/set" -H "Content-Type: application/x-www-form-urlencoded" -d "${1}"
 }
 
+urlencode() {
+	jq -rn --arg x "${1}" '$x|@uri'
+}
+
 displayHeader "Changing Admin Password ..." && while [ true ]; do
 	STATUSCODE="$(curl -s -w '%{http_code}' -o /dev/null -u admin:admin -X POST "https://$HOSTNAME/api/users/change_password?login=admin&previousPassword=admin&password=$PASSWORD")"
 	([[ "$STATUSCODE" = 20* ]] || [[ "$STATUSCODE" = 403 ]]) && break || ( echo "Received status code $STATUSCODE - retry after 10 seconds"; sleep 10)
 done
-
-displayHeader "Ensure Packages ..." \
-	&& sudo apt install -y gridsite-clients > /dev/null
 
 displayHeader "Configure SonarQube Core ..." \
 	&& waitForSonarQube \
