@@ -23,7 +23,7 @@ jobs:
       - name: Install BICEP
         uses: anthony-c-martin/setup-bicep@v0.1
 
-      - name: Transpile BICEP to ARM
+      - name: Transpile Templates & Mark Script as Executable
         run: chmod +x ./transpile.sh && ./transpile.sh
 
       - name: Commit and Push changes
