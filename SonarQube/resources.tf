@@ -96,8 +96,8 @@ resource "azurerm_mssql_firewall_rule" "SonarQube" {
 }
 
 resource "azuread_application" "SonarQube" {
-  display_name 						= "${data.azurerm_resource_group.SonarQube.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
-  identifier_uris  					= [ "api://${data.azurerm_resource_group.SonarQube.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
+  display_name 						= "${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
+  identifier_uris  					= [ "api://${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
   owners 							= [ data.azuread_client_config.Current.object_id ]
   sign_in_audience 					= "AzureADMyOrg"
 
