@@ -49,7 +49,7 @@ deployEnvironment() {
     		--method post \
     		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
     		--headers "{ 'content-type': 'application/json' }" \
-    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONDEVELOPER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }"
+    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONDEVELOPER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" > /dev/null
 	done < <(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv) && sleep 30
 
 	displayHeader "Resolve catalog name ..."
