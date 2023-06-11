@@ -11,9 +11,9 @@ data "azurerm_resource_group" "Environment" {
 }
 
 data "azurerm_app_configuration_key" "Settings_EnvironmentNetworkId" {
-  configuration_store_id = azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
   key                    = "EnvironmentNetworkId"
-  label                  = azurerm_resource_group.Environment.tags["EnvironmentType"]
+  label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
 }
 
 resource "random_integer" "ResourceSuffix" {
