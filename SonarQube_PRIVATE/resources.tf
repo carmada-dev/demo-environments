@@ -106,7 +106,7 @@ resource "azurerm_private_endpoint" "SonarQubePL_Database" {
 	location            			= data.azurerm_resource_group.Environment.location
 	resource_group_name 			= data.azurerm_resource_group.Environment.name
 
-	subnet_id 						= "${azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/default"
+	subnet_id 						= "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/default"
 
 	private_service_connection {
 		name = "default"
@@ -121,7 +121,7 @@ resource "azurerm_private_endpoint" "SonarQubePL_Application" {
 	location            			= data.azurerm_resource_group.Environment.location
 	resource_group_name 			= data.azurerm_resource_group.Environment.name
 
-	subnet_id 						= "${azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/default"
+	subnet_id 						= "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/default"
 
 	private_service_connection {
 		name = "default"
