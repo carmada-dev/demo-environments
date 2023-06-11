@@ -107,7 +107,7 @@ resource "azuread_application" "SonarQube" {
 
     resource_access {
       id   = azuread_service_principal.MSGraph.app_role_ids["User.Read"]
-      type = "Role"
+      type = "Scope"
     }
 
     resource_access {
@@ -119,7 +119,6 @@ resource "azuread_application" "SonarQube" {
 
 resource "azuread_service_principal" "SonarQube" {
   application_id = azuread_application.SonarQube.application_id
-  owners = [ data.azuread_client_config.Current.object_id ]
 }
 
 resource "azuread_service_principal_password" "SonarQube" {
