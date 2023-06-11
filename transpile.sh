@@ -8,3 +8,8 @@ for TEMPLATE in $(find $SCRIPT_DIR -type f -name 'azuredeploy.bicep'); do
 	az bicep build --file ./azuredeploy.bicep --outfile ./azuredeploy.json --only-show-errors
 	popd > /dev/null
 done
+
+for SCRIPT in $(find $SCRIPT_DIR -type f -name '*.sh'); do
+	echo "Marking script as executable '$SCRIPT' ..."
+	git update-index --chmod=+x $SCRIPT
+done
