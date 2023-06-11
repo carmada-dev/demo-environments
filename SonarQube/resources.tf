@@ -2,10 +2,9 @@ data "azuread_client_config" "Current" {}
 
 data "azuread_application_published_app_ids" "well_known" {}
 
-resource "azuread_service_principal" "MSGraph" {
+data "azuread_service_principal" "MSGraph" {
   application_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
-  use_existing   = true
-}
+} 
 
 data "azurerm_resource_group" "Environment" {
   name = "${var.resource_group_name}"
@@ -106,12 +105,12 @@ resource "azuread_application" "SonarQube" {
 	resource_app_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
 
     resource_access {
-      id   = azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.Read"]
+      id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.Read"]
       type = "Scope"
     }
 
     resource_access {
-      id   = azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.ReadBasic.All"]
+      id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.ReadBasic.All"]
       type = "Scope"
     }
   }

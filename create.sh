@@ -44,17 +44,32 @@ deployEnvironment() {
 	displayHeader "Ensure Azure AD permissions ..."
 	while read PRINCIPALID; do
 		echo "- $PRINCIPALID ..."
+
 		APPLICATIONDEVELOPER_ROLEID="cf1c38e5-3621-4004-a7cb-879624dced7c"
 		az rest \
     		--method post \
     		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
     		--headers "{ 'content-type': 'application/json' }" \
     		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONDEVELOPER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" > /dev/null
+
+		GLOABLREADER_ROLEID="f2ef992c-3afb-46b9-b7cf-a126ee74c451"
+		az rest \
+    		--method post \
+    		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
+    		--headers "{ 'content-type': 'application/json' }" \
+    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$GLOABLREADER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" > /dev/null
+
 	done < <(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv) && sleep 30
 
 	displayHeader "Resolve catalog name ..."
 	CATALOG="$(az devcenter dev environment-definition list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?name=='$ENVIRONMENT']|[0].catalogName" -o tsv)"
 	[ -z "$CATALOG" ] && >&2 echo "Unable to find catalog containing environment definition '$ENVIRONMENT'!" && exit 1 || echo $CATALOG
+
+	displayHeader "Delete obsolete environments ..."
+	while read OBSOLETE; do
+		echo "- $OBSOLETE"
+		az devcenter dev environment delete --dev-center-name $ORGANIZATION --project-name $PROJECT --name $OBSOLETE --yes --no-wait
+	done < <(az devcenter dev environment list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?starts_with(name, '$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')-')].name" -o tsv)
 
 	displayHeader "Deploy environment '$ENVIRONMENTNAME' ..."
 	az devcenter dev environment create \
