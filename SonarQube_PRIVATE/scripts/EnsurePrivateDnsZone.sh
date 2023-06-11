@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
 eval "$(jq -r '@sh "RESOURCEGROUPID=\(.RESOURCEGROUPID)"')"
 eval "$(jq -r '@sh "PROJECTNETWORKID=\(.PROJECTNETWORKID)"')"
 eval "$(jq -r '@sh "ENVIRONMENTNETWORKID=\(.ENVIRONMENTNETWORKID)"')"
