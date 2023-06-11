@@ -119,12 +119,13 @@ resource "azuread_application" "SonarQube" {
 
 resource "azuread_service_principal" "SonarQube" {
   application_id = azuread_application.SonarQube.application_id
+
 }
 
-resource "azuread_service_principal_password" "SonarQube" {
-  service_principal_id = azuread_service_principal.SonarQube.id
-  end_date_relative = "87660h"
-}
+# resource "azuread_service_principal_password" "SonarQube" {
+#   service_principal_id = azuread_service_principal.SonarQube.id
+#   end_date_relative = "87660h"
+# }
 
 # resource "null_resource" "SonarQubeInit" {
 
