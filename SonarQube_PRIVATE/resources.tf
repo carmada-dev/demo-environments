@@ -10,21 +10,21 @@ data "azurerm_resource_group" "Environment" {
   name = "${var.resource_group_name}"
 }
 
+data "azurerm_app_configuration_key" "Settings_PrivateLinkResourceGroupId" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "PrivateLinkDnsZoneRG"
+#   label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
+}
+
 data "azurerm_app_configuration_key" "Settings_ProjectNetworkId" {
   configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
   key                    = "ProjectNetworkId"
-  label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
+#   label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
 }
 
 data "azurerm_app_configuration_key" "Settings_EnvironmentNetworkId" {
   configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
   key                    = "EnvironmentNetworkId"
-  label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
-}
-
-data "azurerm_app_configuration_key" "Settings_PrivateLinkResourceGroupId" {
-  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
-  key                    = "PrivateLinkDnsZoneRG"
   label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
 }
 
