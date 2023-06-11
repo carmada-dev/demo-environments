@@ -134,7 +134,7 @@ resource "null_resource" "SonarQubeInit" {
 
 	provisioner "local-exec" {
 		interpreter = [ "/bin/bash", "-c" ]
-		command  = "${path.module}/scripts/InitSonarQube.sh -h ${azurerm_linux_web_app.SonarQube.default_hostname} -p ${var.sonarqube_admin_password} -c ${azuread_application.SonarQube.app.application_id} -s ${azuread_service_principal_password.SonarQube.value}"
+		command  = "${path.module}/scripts/InitSonarQube.sh -h ${azurerm_linux_web_app.SonarQube.default_hostname} -p ${var.sonarqube_admin_password} -c ${azuread_application.SonarQube.application_id} -s ${azuread_service_principal_password.SonarQube.value}"
 		quiet = true
 	}
 
