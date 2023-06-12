@@ -115,6 +115,14 @@ resource "azurerm_linux_web_app" "SonarQube" {
 	}
 }
 
+resource "null_resource" "SonarQubeOpen" {
+
+	provisioner "local-exec" {
+		interpreter = [ "/bin/bash", "-c" ]
+		command = "az resource update --ids '${azurerm_linux_web_app.SonarQube.id}' --set properties.siteConfig.ipSecurityRestrictionsDefaultAction=Allow"
+	}
+}
+
 resource "azurerm_mssql_server" "SonarQube" {
 	name							= "sonarqube${random_integer.ResourceSuffix.result}-sql"
 	location            			= data.azurerm_resource_group.Environment.location
@@ -136,6 +144,13 @@ resource "azurerm_mssql_database" "SonarQube" {
 	max_size_gb 					= 16
 	auto_pause_delay_in_minutes 	= 60
 }
+
+# resource "azurerm_mssql_firewall_rule" "SonarQube" {
+# 	name             				= "FirewallRule"
+# 	server_id        				= azurerm_mssql_server.SonarQube.id
+# 	start_ip_address 				= "0.0.0.0"
+# 	end_ip_address   				= "0.0.0.0"
+# }
 
 resource "azurerm_private_endpoint" "SonarQubePL_Database" {
 	name 							= "${azurerm_mssql_server.SonarQube.name}"
