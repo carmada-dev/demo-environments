@@ -57,7 +57,6 @@ urlencode() {
 }
 
 displayHeader "Changing Admin Password ..." \
-	&& waitForSonarQube \
 	&& changeAdminPassword \
 	&& restartSonarQube
 

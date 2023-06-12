@@ -115,18 +115,10 @@ resource "azurerm_linux_web_app" "SonarQube" {
 	}
 }
 
-resource "azurerm_app_service_virtual_network_swift_connection" "this" {
+resource "azurerm_app_service_virtual_network_swift_connection" "SonarQube" {
 	app_service_id = azurerm_linux_web_app.SonarQube.id
 	subnet_id      = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/Microsoft.Web_serverFarm"
 }
-
-# resource "null_resource" "SonarQubeOpen" {
-
-# 	provisioner "local-exec" {
-# 		interpreter = [ "/bin/bash", "-c" ]
-# 		command = "az resource update --ids '${azurerm_linux_web_app.SonarQube.id}' --set properties.siteConfig.ipSecurityRestrictionsDefaultAction=Allow"
-# 	}
-# }
 
 resource "azurerm_mssql_server" "SonarQube" {
 	name							= "sonarqube${random_integer.ResourceSuffix.result}-sql"
@@ -150,12 +142,61 @@ resource "azurerm_mssql_database" "SonarQube" {
 	auto_pause_delay_in_minutes 	= 60
 }
 
-# resource "azurerm_mssql_firewall_rule" "SonarQube" {
-# 	name             				= "FirewallRule"
-# 	server_id        				= azurerm_mssql_server.SonarQube.id
-# 	start_ip_address 				= "0.0.0.0"
-# 	end_ip_address   				= "0.0.0.0"
-# }
+resource "azuread_application" "SonarQube" {
+	display_name 					= "${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
+	identifier_uris  				= [ "api://${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
+	owners 							= [ data.azuread_client_config.Current.object_id ]
+	sign_in_audience 				= "AzureADMyOrg"
+
+	web {
+		homepage_url  = "https://${azurerm_linux_web_app.SonarQube.default_hostname}"
+		redirect_uris = ["https://${azurerm_linux_web_app.SonarQube.default_hostname}/oauth2/callback/aad"]
+	}
+	
+	required_resource_access {
+		resource_app_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+
+		resource_access {
+			id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.Read"]
+			type = "Scope"
+		}
+
+		resource_access {
+			id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.ReadBasic.All"]
+			type = "Scope"
+		}
+	}
+}
+
+resource "azuread_service_principal" "SonarQube" {
+  application_id = azuread_application.SonarQube.application_id
+}
+
+resource "azuread_service_principal_password" "SonarQube" {
+  service_principal_id = azuread_service_principal.SonarQube.id
+  end_date_relative = "87660h" # 10 years
+}
+
+resource "null_resource" "SonarQubeInit" {
+
+	provisioner "local-exec" {
+		interpreter = [ "/bin/bash", "-c" ]
+		command = "${path.module}/scripts/InitSonarQube.sh"
+		environment = {
+		  HOSTNAME = azurerm_linux_web_app.SonarQube.default_hostname
+		  PASSWORD =  var.sonarqube_admin_password
+		  CLIENTID = azuread_application.SonarQube.application_id
+		  CLIENTSECRET = azuread_service_principal_password.SonarQube.value
+		}
+	}
+
+	depends_on = [ 
+		# database needs to be hooked up with a private endpoint
+		azurerm_private_endpoint.SonarQubePL_Database,
+		# the app service need a outgoing network connection enabling to talk to the db private endpoint
+		azurerm_app_service_virtual_network_swift_connection.SonarQube
+	]
+}
 
 resource "azurerm_private_endpoint" "SonarQubePL_Database" {
 	name 							= "${azurerm_mssql_server.SonarQube.name}"
@@ -195,58 +236,11 @@ resource "azurerm_private_endpoint" "SonarQubePL_Application" {
 		name                 = "default"
 		private_dns_zone_ids = [ data.external.DNSZoneApplication.result.DNSZONEID, data.external.DNSZoneApplicationSCM.result.DNSZONEID ]
   	}
+
+	depends_on = [ 
+		# we need to wait until sq is initialized 
+		# before we hide it behind a private endpoint
+		null_resource.SonarQubeInit 
+	]
 }
 
-resource "azuread_application" "SonarQube" {
-	display_name 					= "${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
-	identifier_uris  				= [ "api://${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
-	owners 							= [ data.azuread_client_config.Current.object_id ]
-	sign_in_audience 				= "AzureADMyOrg"
-
-	web {
-		homepage_url  = "https://${azurerm_linux_web_app.SonarQube.default_hostname}"
-		redirect_uris = ["https://${azurerm_linux_web_app.SonarQube.default_hostname}/oauth2/callback/aad"]
-	}
-	
-	required_resource_access {
-		resource_app_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
-
-		resource_access {
-			id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.Read"]
-			type = "Scope"
-		}
-
-		resource_access {
-			id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.ReadBasic.All"]
-			type = "Scope"
-		}
-	}
-}
-
-resource "azuread_service_principal" "SonarQube" {
-  application_id = azuread_application.SonarQube.application_id
-}
-
-resource "azuread_service_principal_password" "SonarQube" {
-  service_principal_id = azuread_service_principal.SonarQube.id
-  end_date_relative = "87660h" # 10 years
-}
-
-# resource "null_resource" "SonarQubeInit" {
-
-# 	provisioner "local-exec" {
-# 		interpreter = [ "/bin/bash", "-c" ]
-# 		command = "${path.module}/scripts/InitSonarQube.sh"
-# 		environment = {
-# 		  HOSTNAME = azurerm_linux_web_app.SonarQube.default_hostname
-# 		  PASSWORD =  var.sonarqube_admin_password
-# 		  CLIENTID = azuread_application.SonarQube.application_id
-# 		  CLIENTSECRET = azuread_service_principal_password.SonarQube.value
-# 		}
-# 	}
-
-# 	depends_on = [ 
-# 		azurerm_mssql_database.SonarQube,
-# 		azurerm_linux_web_app.SonarQube
-# 	]
-# }
