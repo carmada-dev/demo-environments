@@ -27,7 +27,7 @@ do
 		az network private-dns link vnet create \
 			--subscription $SUBSCRIPTION \
 			--resource-group $RESOURCEGROUP \
-			--name $(basename $PROJECTNETWORKID) \
+			--name $(basename $NETWORKID) \
 			--zone-name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') \
 			--virtual-network $NETWORKID \
 			--registration-enabled false \
