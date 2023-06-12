@@ -224,9 +224,4 @@ resource "null_resource" "SonarQubeInit" {
 		  CLIENTSECRET = azuread_service_principal_password.SonarQube.value
 		}
 	}
-
-	depends_on = [ 
-		azurerm_mssql_database.SonarQube,
-		azurerm_mssql_firewall_rule.SonarQube 
-	]
 }
