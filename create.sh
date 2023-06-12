@@ -50,21 +50,24 @@ deployEnvironment() {
     		--method post \
     		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
     		--headers "{ 'content-type': 'application/json' }" \
-    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONADMINISTRATOR_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" > /dev/null
+    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONADMINISTRATOR_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" \
+			--output none 2> /dev/null
 
 		APPLICATIONDEVELOPER_ROLEID="cf1c38e5-3621-4004-a7cb-879624dced7c"
 		az rest \
     		--method post \
     		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
     		--headers "{ 'content-type': 'application/json' }" \
-    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONDEVELOPER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" > /dev/null
+    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONDEVELOPER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }"  \
+			--output none 2> /dev/null
 
 		GLOABLREADER_ROLEID="f2ef992c-3afb-46b9-b7cf-a126ee74c451"
 		az rest \
     		--method post \
     		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
     		--headers "{ 'content-type': 'application/json' }" \
-    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$GLOABLREADER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" > /dev/null
+    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$GLOABLREADER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }"  \
+			--output none 2> /dev/null
 
 	done < <(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv) && sleep 30
 
