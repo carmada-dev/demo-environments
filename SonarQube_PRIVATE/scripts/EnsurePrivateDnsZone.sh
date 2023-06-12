@@ -34,7 +34,7 @@ az network private-dns link vnet create \
 	--virtual-network $PROJECTNETWORKID \
 	--registration-enabled false \
 	--output none \
-	--only-show-errors 2> /dev/null
+	--only-show-errors || exit 1
 
 az network private-dns link vnet create \
 	--subscription $SUBSCRIPTION \
@@ -44,7 +44,7 @@ az network private-dns link vnet create \
 	--virtual-network $ENVIRONMENTNETWORKID \
 	--registration-enabled false \
 	--output none \
-	--only-show-errors 2> /dev/null
+	--only-show-errors || exit 1
 
 jq -n \
 	--arg DNSZONEID "$DNSZONEID" \
