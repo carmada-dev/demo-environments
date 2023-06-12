@@ -1,7 +1,10 @@
 #!/bin/bash
 
+function raiseError() {
+	echo "$1" 1>&2 && exit 1
+}
 function assertNotEmpty() {
-	[ -z "$2" ] && echo "Variable '$1' must not be empty!" 1>&2 && exit 1
+	[ -z "$2" ] && raiseError "Variable '$1' must not be empty!"
 }
 
 eval "$(jq -r '@sh "RESOURCEGROUPID=\(.RESOURCEGROUPID) PROJECTNETWORKID=\(.PROJECTNETWORKID) ENVIRONMENTNETWORKID=\(.ENVIRONMENTNETWORKID) DNSZONENAME=\(.DNSZONENAME)"')"
@@ -22,7 +25,7 @@ fi
 
 for NETWORKID in "${NETWORKIDS[@]}"
 do
-   	LINKEXISTS="$(az network private-dns link vnet list --resource-group $RESOURCEGROUP --zone-name $DNSZONENAME --query "[?virtualNetwork.id=='$NETWORKID'] | [0] != null")"
+   	LINKEXISTS="$(az network private-dns link vnet list --subscription $SUBSCRIPTION --resource-group $RESOURCEGROUP --zone-name $DNSZONENAME --query "[?virtualNetwork.id=='$NETWORKID'] | [0] != null")"
    	if [ "$LINKEXISTS" == "false" ]; then
 		az network private-dns link vnet create \
 			--subscription $SUBSCRIPTION \
@@ -32,7 +35,7 @@ do
 			--virtual-network $NETWORKID \
 			--registration-enabled false \
 			--output none \
-			--only-show-errors 2> /dev/null
+			--only-show-errors || raiseError "Failed to link DNS zone '$DNSZONEID' with virtual network '$NETWORKID'"
 	fi
 done
 
