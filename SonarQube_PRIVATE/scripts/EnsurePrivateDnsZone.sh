@@ -14,7 +14,7 @@ if [ -z "$DNSZONEID" ]; then
 	DNSZONEID=$(az network private-dns zone create --subscription $SUBSCRIPTION --resource-group $RESOURCEGROUP --name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') --query id -o tsv --only-show-errors 2> /dev/null)
 fi
 
-az network private-dns link vnet create --subscription $SUBSCRIPTION --resource-group $RESOURCEGROUP --name $(basename $PROJECTNETWORKID) --zone-name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') --virtual-network $PROJECTNETWORKID -e false > /dev/null
-az network private-dns link vnet create --subscription $SUBSCRIPTION --resource-group $RESOURCEGROUP --name $(basename $ENVIRONMENTNETWORKID) --zone-name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') --virtual-network $ENVIRONMENTNETWORKID -e false > /dev/null
+az network private-dns link vnet create --subscription $SUBSCRIPTION --resource-group $RESOURCEGROUP --name $(basename $PROJECTNETWORKID) --zone-name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') --virtual-network $PROJECTNETWORKID -e false -o none --only-show-errors
+az network private-dns link vnet create --subscription $SUBSCRIPTION --resource-group $RESOURCEGROUP --name $(basename $ENVIRONMENTNETWORKID) --zone-name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') --virtual-network $ENVIRONMENTNETWORKID -e false -o none --only-show-errors
 
 jq -n --arg id "$DNSZONEID" '{ DNSZONEID: $id }' 
