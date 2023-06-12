@@ -3,6 +3,7 @@
 function raiseError() {
 	echo "$1" 1>&2 && exit 1
 }
+
 function assertNotEmpty() {
 	[ -z "$2" ] && raiseError "Variable '$1' must not be empty!"
 }

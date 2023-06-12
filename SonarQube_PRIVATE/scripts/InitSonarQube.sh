@@ -13,6 +13,10 @@ while getopts 'h:p:c:s:' OPT; do
     esac
 done
 
+function raiseError() {
+	echo "$1" 1>&2 && exit 1
+}
+
 displayHeader() {
 	echo -e "\n======================================================================================"
 	echo $1
@@ -20,9 +24,22 @@ displayHeader() {
 }
 
 waitForSonarQube() {
+	OPERATION_START=$EPOCHSECONDS
+	OPERATION_TIMEOUT=900
 	while [ true ]; do
+		[ $(($EPOCHSECONDS - $OPERATION_START)) -ge $OPERATION_TIMEOUT ] && raiseError "Waiting for SonarQube to become available timed out after $OPERATION_TIMEOUT seconds."
 		STATUS="$(curl -s -u admin:$PASSWORD "https://$HOSTNAME/api/system/status" | jq -r '.status')"
 		[ "$STATUS" = "UP" ] && break || (echo "SonarQube status is $STATUS - retry after 10 seconds"; sleep 10)
+	done
+}
+
+changeAdminPassword() {
+	OPERATION_START=$EPOCHSECONDS
+	OPERATION_TIMEOUT=900
+	while [ true ]; do
+		[ $(($EPOCHSECONDS - $OPERATION_START)) -ge $OPERATION_TIMEOUT ] && raiseError "Changing SonarQube admin password timed out after $OPERATION_TIMEOUT seconds."
+		STATUSCODE="$(curl -s -w '%{http_code}' -o /dev/null -u admin:admin -X POST "https://$HOSTNAME/api/users/change_password?login=admin&previousPassword=admin&password=$PASSWORD")"
+		([[ "$STATUSCODE" = 20* ]] || [[ "$STATUSCODE" = 403 ]]) && break || ( echo "Received status code $STATUSCODE - retry after 10 seconds"; sleep 10)
 	done
 }
 
@@ -39,10 +56,10 @@ urlencode() {
 	jq -rn --arg x "${1}" '$x|@uri'
 }
 
-displayHeader "Changing Admin Password ..." && while [ true ]; do
-	STATUSCODE="$(curl -s -w '%{http_code}' -o /dev/null -u admin:admin -X POST "https://$HOSTNAME/api/users/change_password?login=admin&previousPassword=admin&password=$PASSWORD")"
-	([[ "$STATUSCODE" = 20* ]] || [[ "$STATUSCODE" = 403 ]]) && break || ( echo "Received status code $STATUSCODE - retry after 10 seconds"; sleep 10)
-done
+displayHeader "Changing Admin Password ..." \
+	&& waitForSonarQube \
+	&& changeAdminPassword \
+	&& restartSonarQube
 
 displayHeader "Configure SonarQube Core ..." \
 	&& waitForSonarQube \
