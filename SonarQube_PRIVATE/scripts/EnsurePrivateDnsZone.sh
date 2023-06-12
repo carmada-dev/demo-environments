@@ -12,7 +12,7 @@ assertNotEmpty 'DNSZONENAME' $DNSZONENAME
 
 SUBSCRIPTION="$(echo $RESOURCEGROUPID | cut -d '/' -f3)"
 RESOURCEGROUP="$(echo $RESOURCEGROUPID | cut -d '/' -f5)"
-
+NETWORKIDS=( "$PROJECTNETWORKID" "$ENVIRONMENTNETWORKID" )
 DNSZONEID=$(az network private-dns zone show --subscription $SUBSCRIPTION --resource-group $RESOURCEGROUP --name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') --query id -o tsv --only-show-errors 2> /dev/null)
 
 if [ -z "$DNSZONEID" ]; then
@@ -20,25 +20,21 @@ if [ -z "$DNSZONEID" ]; then
 	assertNotEmpty 'DNSZONEID' $DNSZONEID
 fi
 
-az network private-dns link vnet create \
-	--subscription $SUBSCRIPTION \
-	--resource-group $RESOURCEGROUP \
-	--name $(basename $PROJECTNETWORKID) \
-	--zone-name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') \
-	--virtual-network $PROJECTNETWORKID \
-	--registration-enabled false \
-	--output none \
-	--only-show-errors || exit 1
-
-az network private-dns link vnet create \
-	--subscription $SUBSCRIPTION \
-	--resource-group $RESOURCEGROUP \
-	--name $(basename $PROJECTNETWORKID) \
-	--zone-name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') \
-	--virtual-network $ENVIRONMENTNETWORKID \
-	--registration-enabled false \
-	--output none \
-	--only-show-errors || exit 1
+for NETWORKID in "${NETWORKIDS[@]}"
+do
+   	LINKEXISTS="$(az network private-dns link vnet list --resource-group prj-bumpwatch-pl --zone-name privatelink.azurewebsites.net --query "[?virtualNetwork.id=='$NETWORKID'] | [0] != null")"
+   	if [ "$LINKEXISTS" == "true" ]; then
+		az network private-dns link vnet create \
+			--subscription $SUBSCRIPTION \
+			--resource-group $RESOURCEGROUP \
+			--name $(basename $PROJECTNETWORKID) \
+			--zone-name $(echo $DNSZONENAME | tr '[:upper:]' '[:lower:]') \
+			--virtual-network $NETWORKID \
+			--registration-enabled false \
+			--output none \
+			--only-show-errors 2> /dev/null
+	fi
+done
 
 jq -n \
 	--arg DNSZONENAME "$DNSZONENAME" \
