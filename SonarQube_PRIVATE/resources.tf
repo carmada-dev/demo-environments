@@ -117,7 +117,7 @@ resource "azurerm_linux_web_app" "SonarQube" {
 
 resource "azurerm_app_service_virtual_network_swift_connection" "this" {
 	app_service_id = azurerm_linux_web_app.SonarQube.id
-	subnet_id      = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/default"
+	subnet_id      = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/Microsoft.Web_serverFarm"
 }
 
 # resource "null_resource" "SonarQubeOpen" {
