@@ -107,7 +107,7 @@ resource "azurerm_linux_web_app" "SonarQube" {
 
 	site_config {
 	   	always_on 		= "true"
-
+		
 		application_stack {
 			docker_image 		= "sonarqube"
 			docker_image_tag  	= "lts-community"
@@ -115,13 +115,18 @@ resource "azurerm_linux_web_app" "SonarQube" {
 	}
 }
 
-resource "null_resource" "SonarQubeOpen" {
-
-	provisioner "local-exec" {
-		interpreter = [ "/bin/bash", "-c" ]
-		command = "az resource update --ids '${azurerm_linux_web_app.SonarQube.id}' --set properties.siteConfig.ipSecurityRestrictionsDefaultAction=Allow"
-	}
+resource "azurerm_app_service_virtual_network_swift_connection" "this" {
+	app_service_id = azurerm_linux_web_app.SonarQube.id
+	subnet_id      = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/default"
 }
+
+# resource "null_resource" "SonarQubeOpen" {
+
+# 	provisioner "local-exec" {
+# 		interpreter = [ "/bin/bash", "-c" ]
+# 		command = "az resource update --ids '${azurerm_linux_web_app.SonarQube.id}' --set properties.siteConfig.ipSecurityRestrictionsDefaultAction=Allow"
+# 	}
+# }
 
 resource "azurerm_mssql_server" "SonarQube" {
 	name							= "sonarqube${random_integer.ResourceSuffix.result}-sql"
