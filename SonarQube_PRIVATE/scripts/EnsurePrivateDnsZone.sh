@@ -46,4 +46,6 @@ az network private-dns link vnet create \
 	--output none \
 	--only-show-errors 2> /dev/null
 
-jq -n --arg id "$DNSZONEID" '{ DNSZONEID: $id }' 
+jq -n \
+	--arg DNSZONEID "$DNSZONEID" \
+	'{ DNSZONEID: $DNSZONEID }' 
