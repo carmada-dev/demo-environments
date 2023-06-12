@@ -23,7 +23,7 @@ fi
 for NETWORKID in "${NETWORKIDS[@]}"
 do
    	LINKEXISTS="$(az network private-dns link vnet list --resource-group $RESOURCEGROUP --zone-name $DNSZONENAME --query "[?virtualNetwork.id=='$NETWORKID'] | [0] != null")"
-   	if [ "$LINKEXISTS" == "true" ]; then
+   	if [ "$LINKEXISTS" == "false" ]; then
 		az network private-dns link vnet create \
 			--subscription $SUBSCRIPTION \
 			--resource-group $RESOURCEGROUP \
