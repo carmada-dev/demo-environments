@@ -2,6 +2,10 @@ data "azuread_client_config" "Current" {}
 
 data "azuread_application_published_app_ids" "well_known" {}
 
+data "external" "Runner" {
+	program = [ "bash", "jq -n --arg PublicIP \"$(curl ifconfig.me.)\" '{ \"PublicIP\": $PublicIP }'" ]
+}
+
 data "azuread_service_principal" "MSGraph" {
   application_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
 } 
@@ -25,7 +29,7 @@ data "azurerm_app_configuration_key" "Settings_ProjectNetworkId" {
 data "azurerm_app_configuration_key" "Settings_EnvironmentNetworkId" {
   configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
   key                    = "EnvironmentNetworkId"
-  label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
+  label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
 }
 
 data "external" "DNSZoneDatabase" {
