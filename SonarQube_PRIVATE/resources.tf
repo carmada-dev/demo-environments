@@ -2,9 +2,9 @@ data "azuread_client_config" "Current" {}
 
 data "azuread_application_published_app_ids" "well_known" {}
 
-data "external" "Runner" {
-	program = [ "bash", "jq -n --arg PublicIP \"$(curl ifconfig.me.)\" '{ \"PublicIP\": $PublicIP }'" ]
-}
+# data "external" "Runner" {
+# 	program = [ "bash", "jq -n --arg PublicIP \"$(curl ifconfig.me.)\" '{ \"PublicIP\": $PublicIP }'" ]
+# }
 
 data "azuread_service_principal" "MSGraph" {
   application_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
