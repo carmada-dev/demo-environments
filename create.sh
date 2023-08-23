@@ -1,6 +1,7 @@
 DEBUG="false"
+USERID="me"
 
-while getopts 'o:p:e:t:d' OPT; do
+while getopts 'o:p:e:t:u:d' OPT; do
     case "$OPT" in
 		o)
 			ORGANIZATION="${OPTARG}" ;;
@@ -10,6 +11,8 @@ while getopts 'o:p:e:t:d' OPT; do
 			ENVIRONMENT="${OPTARG}" ;;
 		t)
 			ENVIRONMENTTYPE="${OPTARG}" ;;
+		u)
+			USERID="$(az ad user show --id ${OPTARG} --query id -o tsv | dos2unix)" ;;
 		d)
 			DEBUG="true" ;;
     esac
@@ -41,35 +44,35 @@ deployEnvironment() {
 		az devcenter admin catalog sync --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP_DEVCENTER --catalog-name $CATALOGITEM &
 	done < <(az devcenter admin catalog list --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP_DEVCENTER --query '[].name' -o tsv) && wait
 
-	displayHeader "Ensure Azure AD permissions ..."
-	while read PRINCIPALID; do
-		echo "- $PRINCIPALID ..."
+	# displayHeader "Ensure Azure AD permissions ..."
+	# while read PRINCIPALID; do
+	# 	echo "- $PRINCIPALID ..."
 
-		APPLICATIONADMINISTRATOR_ROLEID="158c047a-c907-4556-b7ef-446551a6b5f7"
-		az rest \
-    		--method post \
-    		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
-    		--headers "{ 'content-type': 'application/json' }" \
-    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONADMINISTRATOR_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" \
-			--output none 2> /dev/null
+	# 	APPLICATIONADMINISTRATOR_ROLEID="158c047a-c907-4556-b7ef-446551a6b5f7"
+	# 	az rest \
+    # 		--method post \
+    # 		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
+    # 		--headers "{ 'content-type': 'application/json' }" \
+    # 		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONADMINISTRATOR_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" \
+	# 		--output none 2> /dev/null
 
-		APPLICATIONDEVELOPER_ROLEID="cf1c38e5-3621-4004-a7cb-879624dced7c"
-		az rest \
-    		--method post \
-    		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
-    		--headers "{ 'content-type': 'application/json' }" \
-    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONDEVELOPER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }"  \
-			--output none 2> /dev/null
+	# 	APPLICATIONDEVELOPER_ROLEID="cf1c38e5-3621-4004-a7cb-879624dced7c"
+	# 	az rest \
+    # 		--method post \
+    # 		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
+    # 		--headers "{ 'content-type': 'application/json' }" \
+    # 		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$APPLICATIONDEVELOPER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }"  \
+	# 		--output none 2> /dev/null
 
-		GLOABLREADER_ROLEID="f2ef992c-3afb-46b9-b7cf-a126ee74c451"
-		az rest \
-    		--method post \
-    		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
-    		--headers "{ 'content-type': 'application/json' }" \
-    		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$GLOABLREADER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }"  \
-			--output none 2> /dev/null
+	# 	GLOABLREADER_ROLEID="f2ef992c-3afb-46b9-b7cf-a126ee74c451"
+	# 	az rest \
+    # 		--method post \
+    # 		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
+    # 		--headers "{ 'content-type': 'application/json' }" \
+    # 		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$GLOABLREADER_ROLEID', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }"  \
+	# 		--output none 2> /dev/null
 
-	done < <(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv) && sleep 30
+	# done < <(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv) && sleep 30
 
 	displayHeader "Resolve catalog name ..."
 	CATALOG="$(az devcenter dev environment-definition list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?name=='$ENVIRONMENT']|[0].catalogName" -o tsv)"
@@ -90,6 +93,7 @@ deployEnvironment() {
 		--environment-type $ENVIRONMENTTYPE \
 		--name $ENVIRONMENTNAME \
 		--parameters $PARAMETERS \
+		--user-id $USERID \
 		$DEBUGARG
 
 
