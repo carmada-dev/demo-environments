@@ -75,6 +75,35 @@ resource "random_password" "DatabasePassword" {
 	min_special 			= 5
 }
 
+resource "azurerm_virtual_network" "SonarQube" {
+	name                	= "sonarqube${random_integer.ResourceSuffix.result}-net"
+	location            	= data.azurerm_resource_group.Environment.location
+	resource_group_name 	= data.azurerm_resource_group.Environment.name
+
+	address_space       = ["192.168.76.200/24"]
+	dns_servers         = ["10.0.0.4", "10.0.0.5"]
+
+	subnet {
+		name           = "subnet1"
+		address_prefix = "192.168.76.200/24"
+	}
+
+}
+
+resource "azurerm_subnet" "SonarQube_WebServer" {
+  name                 = "webserver"
+  resource_group_name 	= data.azurerm_resource_group.Environment.name
+  virtual_network_name = azurerm_virtual_network.SonarQube.name
+  address_prefixes     = ["192.168.76.200/24"]
+
+  delegation {
+    name = "Microsoft.Web/serverFarms"
+    service_delegation {
+      name    = "Microsoft.Web/serverFarms"
+    }
+  }
+}
+
 resource "azurerm_service_plan" "SonarQube" {
 	name                	= "sonarqube${random_integer.ResourceSuffix.result}-srv"
 	location            	= data.azurerm_resource_group.Environment.location
@@ -121,7 +150,7 @@ resource "azurerm_linux_web_app" "SonarQube" {
 
 resource "azurerm_app_service_virtual_network_swift_connection" "SonarQube" {
 	app_service_id = azurerm_linux_web_app.SonarQube.id
-	subnet_id      = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}/subnets/integrate"
+	subnet_id      = azurerm_subnet.SonarQube_WebServer.id
 }
 
 resource "azurerm_mssql_server" "SonarQube" {
@@ -149,7 +178,7 @@ resource "azurerm_mssql_database" "SonarQube" {
 resource "azuread_application" "SonarQube" {
 	display_name 					= "${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
 	identifier_uris  				= [ "api://${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
-	owners 							= [ data.azuread_client_config.Current.object_id ]
+	owners 							= [ data.azuread_client_config.Current.client_id ]
 	sign_in_audience 				= "AzureADMyOrg"
 
 	web {
