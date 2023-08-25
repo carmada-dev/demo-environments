@@ -55,7 +55,7 @@ resource "azurerm_virtual_network" "SonarQube" {
 	resource_group_name 	= data.azurerm_resource_group.Environment.name
 
 	address_space       = ["192.168.200.0/24"]
-	# dns_servers         = ["10.0.0.4", "10.0.0.5"]
+	dns_servers         = ["168.63.129.16", data.azurerm_app_configuration_key.Settings_EnvironmentGatewayIP.value]
 
 }
 
