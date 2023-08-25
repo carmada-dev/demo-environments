@@ -205,26 +205,26 @@ resource "azuread_service_principal_password" "SonarQube" {
   end_date_relative = "87660h" # 10 years
 }
 
-resource "null_resource" "SonarQubeInit" {
+# resource "null_resource" "SonarQubeInit" {
 
-	provisioner "local-exec" {
-		interpreter = [ "/bin/bash", "-c" ]
-		command = "${path.module}/scripts/InitSonarQube.sh"
-		environment = {
-		  HOSTNAME = azurerm_linux_web_app.SonarQube.default_hostname
-		  PASSWORD =  var.sonarqube_admin_password
-		  CLIENTID = azuread_application.SonarQube.application_id
-		  CLIENTSECRET = azuread_service_principal_password.SonarQube.value
-		}
-	}
+# 	provisioner "local-exec" {
+# 		interpreter = [ "/bin/bash", "-c" ]
+# 		command = "${path.module}/scripts/InitSonarQube.sh"
+# 		environment = {
+# 		  HOSTNAME = azurerm_linux_web_app.SonarQube.default_hostname
+# 		  PASSWORD =  var.sonarqube_admin_password
+# 		  CLIENTID = azuread_application.SonarQube.application_id
+# 		  CLIENTSECRET = azuread_service_principal_password.SonarQube.value
+# 		}
+# 	}
 
-	depends_on = [ 
-		# database needs to be hooked up with a private endpoint
-		azurerm_private_endpoint.SonarQubePL_Database,
-		# the app service need a outgoing network connection enabling to talk to the db private endpoint
-		azurerm_app_service_virtual_network_swift_connection.SonarQube
-	]
-}
+# 	depends_on = [ 
+# 		# database needs to be hooked up with a private endpoint
+# 		azurerm_private_endpoint.SonarQubePL_Database,
+# 		# the app service need a outgoing network connection enabling to talk to the db private endpoint
+# 		azurerm_app_service_virtual_network_swift_connection.SonarQube
+# 	]
+# }
 
 resource "azurerm_private_endpoint" "SonarQubePL_Database" {
 	name 							= "${azurerm_mssql_server.SonarQube.name}"
