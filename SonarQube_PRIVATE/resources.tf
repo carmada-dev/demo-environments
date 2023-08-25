@@ -32,49 +32,6 @@ data "azurerm_app_configuration_key" "Settings_EnvironmentNetworkId" {
   label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
 }
 
-data "external" "DNSZoneDatabase" {
-	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
-	query = {
-	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
-	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
-	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
-	  DNSZONENAME = "privatelink.database.windows.net"
-	}
-}
-
-data "external" "DNSZoneApplication" {
-	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
-	query = {
-	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
-	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
-	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
-	  DNSZONENAME = "privatelink.azurewebsites.net"
-	}
-}
-
-data "external" "DNSZoneApplicationSCM" {
-	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
-	query = {
-	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
-	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
-	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
-	  DNSZONENAME = "scm.privatelink.azurewebsites.net"
-	}
-}
-
-resource "random_integer" "ResourceSuffix" {
-	min 					= 10000
-	max						= 99999
-}
-
-resource "random_password" "DatabasePassword" {
-	length					= 20
-	min_lower 				= 5
-	min_upper 				= 5
-	min_numeric 			= 5
-	min_special 			= 5
-}
-
 resource "azurerm_virtual_network" "SonarQube" {
 	name                	= "sonarqube${random_integer.ResourceSuffix.result}-net"
 	location            	= data.azurerm_resource_group.Environment.location
@@ -105,6 +62,67 @@ resource "azurerm_subnet" "SonarQube_WebServer" {
     }
   }
 }
+
+resource "azurerm_virtual_network_peering" "Instance2Type" {
+  name                      = sha1("${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}")
+  resource_group_name       = data.azurerm_resource_group.Environment.name
+  virtual_network_name      = azurerm_virtual_network.SonarQube.name
+  remote_virtual_network_id = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
+}
+
+resource "azurerm_virtual_network_peering" "Type2Instance" {
+  name                      = sha1(azurerm_virtual_network.SonarQube.id)
+  resource_group_name       = element(split("/", "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"),4)
+  virtual_network_name      = element(split("/", "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"),8)
+  remote_virtual_network_id = azurerm_virtual_network.SonarQube.id
+}
+
+data "external" "DNSZoneDatabase" {
+	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
+	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
+	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
+	  DNSZONENAME = "privatelink.database.windows.net"
+	}
+}
+
+data "external" "DNSZoneApplication" {
+	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
+	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
+	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
+	  DNSZONENAME = "privatelink.azurewebsites.net"
+	}
+}
+
+data "external" "DNSZoneApplicationSCM" {
+	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
+	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
+	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
+	  DNSZONENAME = "scm.privatelink.azurewebsites.net"
+	}
+}
+
+resource "random_integer" "ResourceSuffix" {
+	min 					= 10000
+	max						= 99999
+}
+
+resource "random_password" "DatabasePassword" {
+	length					= 20
+	min_lower 				= 5
+	min_upper 				= 5
+	min_numeric 			= 5
+	min_special 			= 5
+}
+
 
 resource "azurerm_service_plan" "SonarQube" {
 	name                	= "sonarqube${random_integer.ResourceSuffix.result}-srv"
