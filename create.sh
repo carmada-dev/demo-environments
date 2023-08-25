@@ -60,16 +60,16 @@ deployEnvironment() {
 	while read PRINCIPALID; do
 		echo "- Principal $PRINCIPALID ..."
 		
-		for AZURE_ROLE in "${AZURE_ROLES[@]}"; do
+		# for AZURE_ROLE in "${AZURE_ROLES[@]}"; do
 
-			echo "Azure role $AZURE_ROLE" && az rest \
-				--method post \
-				--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
-				--headers "{ 'content-type': 'application/json' }" \
-				--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$AZURE_ROLE', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" \
-				--output none 2> /dev/null
+		# 	echo "Azure role $AZURE_ROLE" && az rest \
+		# 		--method post \
+		# 		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
+		# 		--headers "{ 'content-type': 'application/json' }" \
+		# 		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$AZURE_ROLE', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" \
+		# 		--output none 2> /dev/null
 
-		done
+		# done
 
 		for GRAPH_ROLE in "${GRAPH_ROLES[@]}"; do
 
