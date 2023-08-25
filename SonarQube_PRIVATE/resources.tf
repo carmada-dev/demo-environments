@@ -17,19 +17,36 @@ data "azurerm_resource_group" "Environment" {
 data "azurerm_app_configuration_key" "Settings_PrivateLinkResourceGroupId" {
   configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
   key                    = "PrivateLinkDnsZoneRG"
-#   label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
 }
 
 data "azurerm_app_configuration_key" "Settings_ProjectNetworkId" {
   configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
   key                    = "ProjectNetworkId"
-#   label                  = data.azurerm_resource_group.Environment.tags["EnvironmentType"]
 }
 
 data "azurerm_app_configuration_key" "Settings_EnvironmentNetworkId" {
   configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
   key                    = "EnvironmentNetworkId"
   label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
+}
+
+data "azurerm_app_configuration_key" "Settings_EnvironmentGatewayIP" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "EnvironmentGatewayIP"
+  label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
+}
+
+resource "azurerm_route_table" "SonarQube" {
+  	name                    	= "sonarqube${random_integer.ResourceSuffix.result}-route"
+	location            		= data.azurerm_resource_group.Environment.location
+	resource_group_name 		= data.azurerm_resource_group.Environment.name
+
+	route {
+		name           			= "default"
+		address_prefix 			= "0.0.0.0/0"
+		next_hop_type  			= "VirtualAppliance"
+		next_hop_in_ip_address 	= data.azurerm_app_configuration_key.Settings_EnvironmentGatewayIP.value
+	}
 }
 
 resource "azurerm_virtual_network" "SonarQube" {
@@ -49,6 +66,11 @@ resource "azurerm_subnet" "SonarQube_Default" {
   address_prefixes     = ["192.168.200.0/25"]
 }
 
+resource "azurerm_subnet_route_table_association" "SonarQube_Default_Routes" {
+  subnet_id      = azurerm_subnet.SonarQube_Default.id
+  route_table_id = azurerm_route_table.SonarQube.id
+}
+
 resource "azurerm_subnet" "SonarQube_WebServer" {
   name                 = "webserver"
   resource_group_name 	= data.azurerm_resource_group.Environment.name
@@ -61,6 +83,11 @@ resource "azurerm_subnet" "SonarQube_WebServer" {
       name    = "Microsoft.Web/serverFarms"
     }
   }
+}
+
+resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
+  subnet_id      = azurerm_subnet.SonarQube_WebServer.id
+  route_table_id = azurerm_route_table.SonarQube.id
 }
 
 resource "azurerm_virtual_network_peering" "Instance2Type" {
