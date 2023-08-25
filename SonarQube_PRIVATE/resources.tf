@@ -215,7 +215,7 @@ resource "azuread_service_principal_password" "SonarQube" {
 resource "null_resource" "SonarQubeInit" {
 
 	provisioner "local-exec" {
-		interpreter = [ "/bin/bash", "-c" ]
+		interpreter = [ "/bin/bash" ]
 		command = "${path.module}/scripts/InitSonarQube.sh"
 		environment = {
 		  HOSTNAME = azurerm_linux_web_app.SonarQube.default_hostname
