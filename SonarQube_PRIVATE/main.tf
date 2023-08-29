@@ -1,18 +1,402 @@
-terraform {
-	required_providers {
-		azurerm = {
-			version = "=3.59.0"
-		}
-		azuread = {
-			
-		}
-		random = {
+data "azuread_client_config" "Current" {}
 
+data "azuread_application_published_app_ids" "well_known" {}
+
+data "azuread_service_principal" "MSGraph" {
+  application_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+} 
+
+data "azurerm_resource_group" "Environment" {
+  name = "${var.resource_group_name}"
+}
+
+data "azurerm_app_configuration_key" "Settings_PrivateLinkResourceGroupId" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "PrivateLinkDnsZoneRG"
+}
+
+data "azurerm_app_configuration_key" "Settings_ProjectNetworkId" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "ProjectNetworkId"
+}
+
+data "azurerm_app_configuration_key" "Settings_ProjectGatewayIP" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "ProjectGatewayIP"
+}
+
+data "azurerm_app_configuration_key" "Settings_EnvironmentNetworkId" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "EnvironmentNetworkId"
+  label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
+}
+
+data "azurerm_app_configuration_key" "Settings_EnvironmentGatewayIP" {
+  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+  key                    = "EnvironmentGatewayIP"
+  label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
+}
+
+resource "azurerm_route_table" "SonarQube" {
+  	name                    	= "sonarqube${random_integer.ResourceSuffix.result}-route"
+	location            		= data.azurerm_resource_group.Environment.location
+	resource_group_name 		= data.azurerm_resource_group.Environment.name
+
+	route {
+		name           			= "default"
+		address_prefix 			= "0.0.0.0/0"
+		next_hop_type  			= "VirtualAppliance"
+		next_hop_in_ip_address 	= data.azurerm_app_configuration_key.Settings_ProjectGatewayIP.value
+	}
+}
+
+resource "azurerm_virtual_network" "SonarQube" {
+	name                	= "sonarqube${random_integer.ResourceSuffix.result}-net"
+	location            	= data.azurerm_resource_group.Environment.location
+	resource_group_name 	= data.azurerm_resource_group.Environment.name
+
+	address_space       = ["192.168.200.0/24"]
+	dns_servers         = ["168.63.129.16", data.azurerm_app_configuration_key.Settings_ProjectGatewayIP.value]
+
+}
+
+resource "azurerm_subnet" "SonarQube_Default" {
+  name                 = "default"
+  resource_group_name 	= data.azurerm_resource_group.Environment.name
+  virtual_network_name = azurerm_virtual_network.SonarQube.name
+  address_prefixes     = ["192.168.200.0/25"]
+}
+
+resource "azurerm_subnet_route_table_association" "SonarQube_Default_Routes" {
+  subnet_id      = azurerm_subnet.SonarQube_Default.id
+  route_table_id = azurerm_route_table.SonarQube.id
+}
+
+resource "azurerm_subnet" "SonarQube_WebServer" {
+  name                 = "webserver"
+  resource_group_name 	= data.azurerm_resource_group.Environment.name
+  virtual_network_name = azurerm_virtual_network.SonarQube.name
+  address_prefixes     = ["192.168.200.128/25"]
+
+  delegation {
+    name = "Microsoft.Web/serverFarms"
+    service_delegation {
+      name    = "Microsoft.Web/serverFarms"
+    }
+  }
+}
+
+resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
+  subnet_id      = azurerm_subnet.SonarQube_WebServer.id
+  route_table_id = azurerm_route_table.SonarQube.id
+}
+
+resource "arm2tf_guid" "ProjectNetworkGuid" {
+  input = [
+    data.azurerm_app_configuration_key.Settings_ProjectNetworkId
+  ]
+}
+
+resource "arm2tf_guid" "EnvironmentNetworkGuid" {
+  input = [
+    azurerm_virtual_network.SonarQube.id
+  ]
+}
+
+resource "null_resource" "Peering" {
+
+	triggers = {
+		ProjectNetworkId = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
+		ProjectPeeringName = "environment-${arm2tf_guid.EnvironmentNetworkGuid}"
+	  	EnvironmentNetworkId = azurerm_virtual_network.SonarQube.id
+		EnvironmentPeeringName = "project-${arm2tf_guid.ProjectNetworkGuid}" 
+	}
+
+	provisioner "local-exec" {
+    	command = <<-EOC
+
+az network vnet peering create \
+	--name ${self.triggers.ProjectPeeringName} \
+	--subscription ${element(split("/", "${self.triggers.ProjectNetworkId}"),2)} \
+	--resource-group ${element(split("/", "${self.triggers.ProjectNetworkId}"),4)} \
+	--vnet-name ${element(split("/", "${self.triggers.ProjectNetworkId}"),8)} \
+	--remote-vnet ${self.triggers.EnvironmentNetworkId} \
+	--allow-vnet-access \
+	--allow-forwarded-traffic \
+	--only-show-errors \
+	--output none
+
+az network vnet peering create \
+	--name ${self.triggers.EnvironmentPeeringName} \
+	--subscription ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),2)} \
+	--resource-group ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),4)} \
+	--vnet-name ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),8)} \
+	--remote-vnet ${self.triggers.ProjectNetworkId} \
+	--allow-vnet-access \
+	--allow-forwarded-traffic \
+	--only-show-errors \
+	--output none
+
+EOC
+  	}
+  
+  	provisioner "local-exec" {
+		when    = destroy
+		command = <<-EOC
+
+az network vnet peering delete \
+	--name ${self.triggers.ProjectPeeringName} \
+	--subscription ${element(split("/", "${self.triggers.ProjectNetworkId}"),2)} \
+	--resource-group ${element(split("/", "${self.triggers.ProjectNetworkId}"),4)} \
+	--vnet-name ${element(split("/", "${self.triggers.ProjectNetworkId}"),8)} \
+	--only-show-errors \
+	--output none
+
+az network vnet peering delete \
+	--name ${self.triggers.EnvironmentPeeringName} \
+	--subscription ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),2)} \
+	--resource-group ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),4)} \
+	--vnet-name ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),8)} \
+	--only-show-errors \
+	--output none
+
+EOC
+	}
+
+}
+
+# peer environment instance vnet with environment type vnet (both ways)
+# resource "azurerm_virtual_network_peering" "Instance2Type" {
+#   name                      = sha1("${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}")
+#   resource_group_name       = data.azurerm_resource_group.Environment.name
+#   virtual_network_name      = azurerm_virtual_network.SonarQube.name
+#   remote_virtual_network_id = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
+# }
+
+# resource "azurerm_virtual_network_peering" "Type2Instance" {
+#   name                      = sha1(azurerm_virtual_network.SonarQube.id)
+#   resource_group_name       = element(split("/", "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"),4)
+#   virtual_network_name      = element(split("/", "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"),8)
+#   remote_virtual_network_id = azurerm_virtual_network.SonarQube.id
+# }
+
+data "external" "DNSZoneDatabase" {
+	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
+	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
+	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
+	  DNSZONENAME = "privatelink.database.windows.net"
+	}
+}
+
+data "external" "DNSZoneApplication" {
+	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
+	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
+	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
+	  DNSZONENAME = "privatelink.azurewebsites.net"
+	}
+}
+
+data "external" "DNSZoneApplicationSCM" {
+	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
+	query = {
+	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
+	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
+	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
+	  DNSZONENAME = "scm.privatelink.azurewebsites.net"
+	}
+}
+
+resource "random_integer" "ResourceSuffix" {
+	min 					= 10000
+	max						= 99999
+}
+
+resource "random_password" "DatabasePassword" {
+	length					= 20
+	min_lower 				= 5
+	min_upper 				= 5
+	min_numeric 			= 5
+	min_special 			= 5
+}
+
+
+resource "azurerm_service_plan" "SonarQube" {
+	name                	= "sonarqube${random_integer.ResourceSuffix.result}-srv"
+	location            	= data.azurerm_resource_group.Environment.location
+	resource_group_name 	= data.azurerm_resource_group.Environment.name
+
+	os_type             	= "Linux"
+	sku_name            	= "P1v2"
+}
+
+resource "azurerm_linux_web_app" "SonarQube" {
+	name                	= "sonarqube${random_integer.ResourceSuffix.result}-web"
+	location            	= data.azurerm_resource_group.Environment.location
+	resource_group_name 	= data.azurerm_resource_group.Environment.name
+	
+	service_plan_id 		= azurerm_service_plan.SonarQube.id
+	https_only 				= true
+
+	app_settings 			= {
+		"SONAR_JDBC_URL": "jdbc:sqlserver://${azurerm_mssql_server.SonarQube.fully_qualified_domain_name};databaseName=${azurerm_mssql_database.SonarQube.name};encrypt=true;trustServerCertificate=false;hostNameInCertificate=${replace(azurerm_mssql_server.SonarQube.fully_qualified_domain_name, "${azurerm_mssql_server.SonarQube.name}.", "*.")};loginTimeout=30;"
+		"SONAR_JDBC_USERNAME": "SonarQube"
+		"SONAR_JDBC_PASSWORD": "${random_password.DatabasePassword.result}"
+		"SONAR_SEARCH_JAVAADDITIONALOPTS": "-Dnode.store.allow_mmap=false"
+		"sonar.path.data": "/home/sonarqube/data"
+	}
+
+	logs {
+		http_logs {
+		  file_system {
+			retention_in_days = 7
+			retention_in_mb = 35
+		  }
+		}
+	}
+
+	site_config {
+	   	always_on 		= "true"
+		
+		application_stack {
+			docker_image 		= "sonarqube"
+			docker_image_tag  	= "lts-community"
 		}
 	}
 }
 
-provider "azurerm" {
-	features {}
-	skip_provider_registration = true
+resource "azurerm_app_service_virtual_network_swift_connection" "SonarQube" {
+	app_service_id = azurerm_linux_web_app.SonarQube.id
+	subnet_id      = azurerm_subnet.SonarQube_WebServer.id
 }
+
+resource "azurerm_mssql_server" "SonarQube" {
+	name							= "sonarqube${random_integer.ResourceSuffix.result}-sql"
+	location            			= data.azurerm_resource_group.Environment.location
+	resource_group_name 			= data.azurerm_resource_group.Environment.name
+
+	version                      	= "12.0"
+	administrator_login          	= "SonarQube"
+	administrator_login_password 	= "${ random_password.DatabasePassword.result }"
+	public_network_access_enabled 	= false
+}
+
+resource "azurerm_mssql_database" "SonarQube" {
+	name           					= "sonar"
+	server_id      					= azurerm_mssql_server.SonarQube.id
+
+	sku_name       					= "GP_S_Gen5_2"
+	collation      					= "SQL_Latin1_General_CP1_CS_AS"
+	min_capacity 					= 1
+	max_size_gb 					= 16
+	auto_pause_delay_in_minutes 	= 60
+}
+
+resource "azuread_application" "SonarQube" {
+	display_name 					= "${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
+	identifier_uris  				= [ "api://${data.azurerm_resource_group.Environment.name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
+	# owners 							= [ data.azuread_client_config.Current.object_id ]
+	sign_in_audience 				= "AzureADMyOrg"
+
+	web {
+		homepage_url  = "https://${azurerm_linux_web_app.SonarQube.default_hostname}"
+		redirect_uris = ["https://${azurerm_linux_web_app.SonarQube.default_hostname}/oauth2/callback/aad"]
+	}
+	
+	required_resource_access {
+		resource_app_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+
+		resource_access {
+			id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.Read"]
+			type = "Scope"
+		}
+
+		resource_access {
+			id   = data.azuread_service_principal.MSGraph.oauth2_permission_scope_ids["User.ReadBasic.All"]
+			type = "Scope"
+		}
+	}
+}
+
+resource "azuread_service_principal" "SonarQube" {
+  application_id = azuread_application.SonarQube.application_id
+}
+
+resource "azuread_service_principal_password" "SonarQube" {
+  service_principal_id = azuread_service_principal.SonarQube.id
+  end_date_relative = "87660h" # 10 years
+}
+
+resource "null_resource" "SonarQubeInit" {
+
+	provisioner "local-exec" {
+		interpreter = [ "/bin/bash" ]
+		command = "${path.module}/scripts/InitSonarQube.sh"
+		environment = {
+		  HOSTNAME = azurerm_linux_web_app.SonarQube.default_hostname
+		  PASSWORD =  var.sonarqube_admin_password
+		  CLIENTID = azuread_application.SonarQube.application_id
+		  CLIENTSECRET = azuread_service_principal_password.SonarQube.value
+		}
+	}
+
+	depends_on = [ 
+		# database needs to be hooked up with a private endpoint
+		azurerm_private_endpoint.SonarQubePL_Database,
+		# the app service need a outgoing network connection enabling to talk to the db private endpoint
+		azurerm_app_service_virtual_network_swift_connection.SonarQube
+	]
+}
+
+resource "azurerm_private_endpoint" "SonarQubePL_Database" {
+	name 							= "${azurerm_mssql_server.SonarQube.name}"
+	location            			= data.azurerm_resource_group.Environment.location
+	resource_group_name 			= data.azurerm_resource_group.Environment.name
+
+	subnet_id 						= azurerm_subnet.SonarQube_Default.id
+
+	private_service_connection {
+		name = "default"
+		is_manual_connection = "false"
+		private_connection_resource_id = azurerm_mssql_server.SonarQube.id
+		subresource_names = ["sqlServer"]
+	}
+
+	private_dns_zone_group {
+		name                 = "default"
+		private_dns_zone_ids = [ data.external.DNSZoneDatabase.result.DNSZONEID ]
+  	}
+}
+
+resource "azurerm_private_endpoint" "SonarQubePL_Application" {
+	name 							= "${azurerm_linux_web_app.SonarQube.name}"
+	location            			= data.azurerm_resource_group.Environment.location
+	resource_group_name 			= data.azurerm_resource_group.Environment.name
+
+	subnet_id 						= azurerm_subnet.SonarQube_Default.id
+
+	private_service_connection {
+		name = "default"
+		is_manual_connection = "false"
+		private_connection_resource_id = azurerm_linux_web_app.SonarQube.id
+		subresource_names = ["sites"]
+	}
+
+	private_dns_zone_group {
+		name                 = "default"
+		private_dns_zone_ids = [ data.external.DNSZoneApplication.result.DNSZONEID, data.external.DNSZoneApplicationSCM.result.DNSZONEID ]
+  	}
+
+	depends_on = [ 
+		# we need to wait until sq is initialized 
+		# before we hide it behind a private endpoint
+		null_resource.SonarQubeInit 
+	]
+}
+
