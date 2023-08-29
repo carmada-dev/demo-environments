@@ -107,9 +107,9 @@ resource "null_resource" "Peering" {
 
 	triggers = {
 		ProjectNetworkId = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
-		ProjectPeeringName = "environment-${arm2tf_guid.EnvironmentNetworkGuid}"
+		ProjectPeeringName = "environment-${arm2tf_guid.EnvironmentNetworkGuid.result}"
 	  	EnvironmentNetworkId = azurerm_virtual_network.SonarQube.id
-		EnvironmentPeeringName = "project-${arm2tf_guid.ProjectNetworkGuid}" 
+		EnvironmentPeeringName = "project-${arm2tf_guid.ProjectNetworkGuid.result}" 
 	}
 
 	provisioner "local-exec" {
