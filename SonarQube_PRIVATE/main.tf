@@ -93,7 +93,7 @@ resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
 
 resource "arm2tf_guid" "ProjectNetworkGuid" {
   input = [
-    data.azurerm_app_configuration_key.Settings_ProjectNetworkId
+    data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
   ]
 }
 
