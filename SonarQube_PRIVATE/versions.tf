@@ -9,9 +9,9 @@ terraform {
 		random = {
 
 		}
-		arm2tf = {
-			source = "cloud-maker-ai/arm2tf"
-			version = "0.2.2"
-		}
+		# arm2tf = {
+		# 	source = "cloud-maker-ai/arm2tf"
+		# 	version = "0.2.2"
+		# }
 	}
 }

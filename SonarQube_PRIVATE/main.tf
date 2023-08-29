@@ -57,7 +57,6 @@ resource "azurerm_virtual_network" "SonarQube" {
 
 	address_space       = ["192.168.200.0/24"]
 	dns_servers         = ["168.63.129.16", data.azurerm_app_configuration_key.Settings_ProjectGatewayIP.value]
-
 }
 
 resource "azurerm_subnet" "SonarQube_Default" {
@@ -91,79 +90,87 @@ resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
   route_table_id = azurerm_route_table.SonarQube.id
 }
 
-resource "arm2tf_guid" "ProjectNetworkGuid" {
-  input = [
-    data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
-  ]
+module "ade_peernetworks" {
+	source = "github.com/github.com/carmada-dev"
+	hubNetworkId = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
+	hubPeeringPrefix = "environment"
+	spokeNetworkId = azurerm_virtual_network.SonarQube.id
+	spokePeeringPrefix = "project"
 }
 
-resource "arm2tf_guid" "EnvironmentNetworkGuid" {
-  input = [
-    azurerm_virtual_network.SonarQube.id
-  ]
-}
+# resource "arm2tf_guid" "ProjectNetworkGuid" {
+#   input = [
+#     data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
+#   ]
+# }
 
-resource "null_resource" "Peering" {
+# resource "arm2tf_guid" "EnvironmentNetworkGuid" {
+#   input = [
+#     azurerm_virtual_network.SonarQube.id
+#   ]
+# }
 
-	triggers = {
-		ProjectNetworkId = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
-		ProjectPeeringName = "environment-${arm2tf_guid.EnvironmentNetworkGuid.result}"
-	  	EnvironmentNetworkId = azurerm_virtual_network.SonarQube.id
-		EnvironmentPeeringName = "project-${arm2tf_guid.ProjectNetworkGuid.result}" 
-	}
+# resource "null_resource" "Peering" {
 
-	provisioner "local-exec" {
-    	command = <<-EOC
+# 	triggers = {
+# 		ProjectNetworkId = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
+# 		ProjectPeeringName = "environment-${arm2tf_guid.EnvironmentNetworkGuid.result}"
+# 	  	EnvironmentNetworkId = azurerm_virtual_network.SonarQube.id
+# 		EnvironmentPeeringName = "project-${arm2tf_guid.ProjectNetworkGuid.result}" 
+# 	}
 
-az network vnet peering create \
-	--name ${self.triggers.ProjectPeeringName} \
-	--subscription ${element(split("/", "${self.triggers.ProjectNetworkId}"),2)} \
-	--resource-group ${element(split("/", "${self.triggers.ProjectNetworkId}"),4)} \
-	--vnet-name ${element(split("/", "${self.triggers.ProjectNetworkId}"),8)} \
-	--remote-vnet ${self.triggers.EnvironmentNetworkId} \
-	--allow-vnet-access \
-	--allow-forwarded-traffic \
-	--only-show-errors \
-	--output none
+# 	provisioner "local-exec" {
+#     	command = <<-EOC
 
-az network vnet peering create \
-	--name ${self.triggers.EnvironmentPeeringName} \
-	--subscription ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),2)} \
-	--resource-group ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),4)} \
-	--vnet-name ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),8)} \
-	--remote-vnet ${self.triggers.ProjectNetworkId} \
-	--allow-vnet-access \
-	--allow-forwarded-traffic \
-	--only-show-errors \
-	--output none
+# az network vnet peering create \
+# 	--name ${self.triggers.ProjectPeeringName} \
+# 	--subscription ${element(split("/", "${self.triggers.ProjectNetworkId}"),2)} \
+# 	--resource-group ${element(split("/", "${self.triggers.ProjectNetworkId}"),4)} \
+# 	--vnet-name ${element(split("/", "${self.triggers.ProjectNetworkId}"),8)} \
+# 	--remote-vnet ${self.triggers.EnvironmentNetworkId} \
+# 	--allow-vnet-access \
+# 	--allow-forwarded-traffic \
+# 	--only-show-errors \
+# 	--output none
 
-EOC
-  	}
+# az network vnet peering create \
+# 	--name ${self.triggers.EnvironmentPeeringName} \
+# 	--subscription ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),2)} \
+# 	--resource-group ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),4)} \
+# 	--vnet-name ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),8)} \
+# 	--remote-vnet ${self.triggers.ProjectNetworkId} \
+# 	--allow-vnet-access \
+# 	--allow-forwarded-traffic \
+# 	--only-show-errors \
+# 	--output none
+
+# EOC
+#   	}
   
-  	provisioner "local-exec" {
-		when    = destroy
-		command = <<-EOC
+#   	provisioner "local-exec" {
+# 		when    = destroy
+# 		command = <<-EOC
 
-az network vnet peering delete \
-	--name ${self.triggers.ProjectPeeringName} \
-	--subscription ${element(split("/", "${self.triggers.ProjectNetworkId}"),2)} \
-	--resource-group ${element(split("/", "${self.triggers.ProjectNetworkId}"),4)} \
-	--vnet-name ${element(split("/", "${self.triggers.ProjectNetworkId}"),8)} \
-	--only-show-errors \
-	--output none
+# az network vnet peering delete \
+# 	--name ${self.triggers.ProjectPeeringName} \
+# 	--subscription ${element(split("/", "${self.triggers.ProjectNetworkId}"),2)} \
+# 	--resource-group ${element(split("/", "${self.triggers.ProjectNetworkId}"),4)} \
+# 	--vnet-name ${element(split("/", "${self.triggers.ProjectNetworkId}"),8)} \
+# 	--only-show-errors \
+# 	--output none
 
-az network vnet peering delete \
-	--name ${self.triggers.EnvironmentPeeringName} \
-	--subscription ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),2)} \
-	--resource-group ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),4)} \
-	--vnet-name ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),8)} \
-	--only-show-errors \
-	--output none
+# az network vnet peering delete \
+# 	--name ${self.triggers.EnvironmentPeeringName} \
+# 	--subscription ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),2)} \
+# 	--resource-group ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),4)} \
+# 	--vnet-name ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),8)} \
+# 	--only-show-errors \
+# 	--output none
 
-EOC
-	}
+# EOC
+# 	}
 
-}
+# }
 
 # peer environment instance vnet with environment type vnet (both ways)
 # resource "azurerm_virtual_network_peering" "Instance2Type" {
