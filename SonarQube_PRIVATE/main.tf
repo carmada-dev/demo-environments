@@ -91,7 +91,7 @@ resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
 }
 
 module "ade_peernetworks" {
-	source = "github.com/carmada-dev/terraform"
+	source = "https://${data.azurerm_resource_group.Environment.name}@github.com/carmada-dev/terraform"
 	hubNetworkId = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
 	hubPeeringPrefix = "environment"
 	spokeNetworkId = azurerm_virtual_network.SonarQube.id
