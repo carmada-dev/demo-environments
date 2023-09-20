@@ -136,8 +136,6 @@ resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
 # 	}
 # }
 
-
-
 # resource "random_password" "DatabasePassword" {
 # 	length					= 20
 # 	min_lower 				= 5
