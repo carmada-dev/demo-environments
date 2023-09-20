@@ -37,6 +37,13 @@ data "azurerm_app_configuration_key" "Settings_EnvironmentGatewayIP" {
   label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
 }
 
+module "ade_ipalloc" {
+	source = "git::https://git@github.com/carmada-dev/terraform.git//ade_ipalloc?ref=main"
+	configurationStoreId = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
+	configurationLabel = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
+	cidrBlocks = [ 25, 25 ]
+}
+
 resource "azurerm_route_table" "SonarQube" {
   	name                    	= "sonarqube${random_integer.ResourceSuffix.result}-route"
 	location            		= data.azurerm_resource_group.Environment.location
@@ -55,7 +62,7 @@ resource "azurerm_virtual_network" "SonarQube" {
 	location            	= data.azurerm_resource_group.Environment.location
 	resource_group_name 	= data.azurerm_resource_group.Environment.name
 
-	address_space       = ["192.168.200.0/24"]
+	address_space       = module.ade_ipalloc.ip_ranges
 	dns_servers         = ["168.63.129.16", data.azurerm_app_configuration_key.Settings_ProjectGatewayIP.value]
 }
 
@@ -63,7 +70,7 @@ resource "azurerm_subnet" "SonarQube_Default" {
   name                 = "default"
   resource_group_name 	= data.azurerm_resource_group.Environment.name
   virtual_network_name = azurerm_virtual_network.SonarQube.name
-  address_prefixes     = ["192.168.200.0/25"]
+  address_prefixes     = [module.ade_ipalloc.ip_ranges[0]]
 }
 
 resource "azurerm_subnet_route_table_association" "SonarQube_Default_Routes" {
@@ -75,7 +82,7 @@ resource "azurerm_subnet" "SonarQube_WebServer" {
   name                 = "webserver"
   resource_group_name 	= data.azurerm_resource_group.Environment.name
   virtual_network_name = azurerm_virtual_network.SonarQube.name
-  address_prefixes     = ["192.168.200.128/25"]
+  address_prefixes     = [module.ade_ipalloc.ip_ranges[1]]
 
   delegation {
     name = "Microsoft.Web/serverFarms"
@@ -98,101 +105,11 @@ module "ade_peernetworks" {
 	spokePeeringPrefix = "project"
 }
 
-# resource "arm2tf_guid" "ProjectNetworkGuid" {
-#   input = [
-#     data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
-#   ]
-# }
-
-# resource "arm2tf_guid" "EnvironmentNetworkGuid" {
-#   input = [
-#     azurerm_virtual_network.SonarQube.id
-#   ]
-# }
-
-# resource "null_resource" "Peering" {
-
-# 	triggers = {
-# 		ProjectNetworkId = data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
-# 		ProjectPeeringName = "environment-${arm2tf_guid.EnvironmentNetworkGuid.result}"
-# 	  	EnvironmentNetworkId = azurerm_virtual_network.SonarQube.id
-# 		EnvironmentPeeringName = "project-${arm2tf_guid.ProjectNetworkGuid.result}" 
-# 	}
-
-# 	provisioner "local-exec" {
-#     	command = <<-EOC
-
-# az network vnet peering create \
-# 	--name ${self.triggers.ProjectPeeringName} \
-# 	--subscription ${element(split("/", "${self.triggers.ProjectNetworkId}"),2)} \
-# 	--resource-group ${element(split("/", "${self.triggers.ProjectNetworkId}"),4)} \
-# 	--vnet-name ${element(split("/", "${self.triggers.ProjectNetworkId}"),8)} \
-# 	--remote-vnet ${self.triggers.EnvironmentNetworkId} \
-# 	--allow-vnet-access \
-# 	--allow-forwarded-traffic \
-# 	--only-show-errors \
-# 	--output none
-
-# az network vnet peering create \
-# 	--name ${self.triggers.EnvironmentPeeringName} \
-# 	--subscription ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),2)} \
-# 	--resource-group ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),4)} \
-# 	--vnet-name ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),8)} \
-# 	--remote-vnet ${self.triggers.ProjectNetworkId} \
-# 	--allow-vnet-access \
-# 	--allow-forwarded-traffic \
-# 	--only-show-errors \
-# 	--output none
-
-# EOC
-#   	}
-  
-#   	provisioner "local-exec" {
-# 		when    = destroy
-# 		command = <<-EOC
-
-# az network vnet peering delete \
-# 	--name ${self.triggers.ProjectPeeringName} \
-# 	--subscription ${element(split("/", "${self.triggers.ProjectNetworkId}"),2)} \
-# 	--resource-group ${element(split("/", "${self.triggers.ProjectNetworkId}"),4)} \
-# 	--vnet-name ${element(split("/", "${self.triggers.ProjectNetworkId}"),8)} \
-# 	--only-show-errors \
-# 	--output none
-
-# az network vnet peering delete \
-# 	--name ${self.triggers.EnvironmentPeeringName} \
-# 	--subscription ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),2)} \
-# 	--resource-group ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),4)} \
-# 	--vnet-name ${element(split("/", "${self.triggers.EnvironmentNetworkId}"),8)} \
-# 	--only-show-errors \
-# 	--output none
-
-# EOC
-# 	}
-
-# }
-
-# peer environment instance vnet with environment type vnet (both ways)
-# resource "azurerm_virtual_network_peering" "Instance2Type" {
-#   name                      = sha1("${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}")
-#   resource_group_name       = data.azurerm_resource_group.Environment.name
-#   virtual_network_name      = azurerm_virtual_network.SonarQube.name
-#   remote_virtual_network_id = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
-# }
-
-# resource "azurerm_virtual_network_peering" "Type2Instance" {
-#   name                      = sha1(azurerm_virtual_network.SonarQube.id)
-#   resource_group_name       = element(split("/", "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"),4)
-#   virtual_network_name      = element(split("/", "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"),8)
-#   remote_virtual_network_id = azurerm_virtual_network.SonarQube.id
-# }
-
 data "external" "DNSZoneDatabase" {
 	program = [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
 	query = {
 	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
 	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
-	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
 	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME = "privatelink.database.windows.net"
 	}
@@ -203,7 +120,6 @@ data "external" "DNSZoneApplication" {
 	query = {
 	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
 	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
-	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
 	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME = "privatelink.azurewebsites.net"
 	}
@@ -214,7 +130,6 @@ data "external" "DNSZoneApplicationSCM" {
 	query = {
 	  RESOURCEGROUPID = "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
 	  PROJECTNETWORKID = "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
-	  ENVIRONMENTNETWORKID = "${data.azurerm_app_configuration_key.Settings_EnvironmentNetworkId.value}"
 	  PRIVATENETWORKID = azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME = "scm.privatelink.azurewebsites.net"
 	}
