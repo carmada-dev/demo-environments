@@ -27,8 +27,8 @@ data "azurerm_app_configuration_key" "Settings_ProjectGatewayIP" {
 
 module "ade_ipalloc" {
 	source = "git::https://git@github.com/carmada-dev/terraform.git//ade_ipalloc?ref=main"
-	configurationStoreId = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
-	configurationLabel = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
+	configurationStoreId = "${data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]}"
+	configurationLabel = "${data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]}"
 	cidrBlocks = [ 25, 25 ]
 }
 
