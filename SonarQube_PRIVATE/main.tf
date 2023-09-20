@@ -25,18 +25,6 @@ data "azurerm_app_configuration_key" "Settings_ProjectGatewayIP" {
   key                    = "ProjectGatewayIP"
 }
 
-data "azurerm_app_configuration_key" "Settings_EnvironmentNetworkId" {
-  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
-  key                    = "EnvironmentNetworkId"
-  label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
-}
-
-data "azurerm_app_configuration_key" "Settings_EnvironmentGatewayIP" {
-  configuration_store_id = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
-  key                    = "EnvironmentGatewayIP"
-  label                  = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationLabel"]
-}
-
 module "ade_ipalloc" {
 	source = "git::https://git@github.com/carmada-dev/terraform.git//ade_ipalloc?ref=main"
 	configurationStoreId = data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]
