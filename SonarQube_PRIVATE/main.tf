@@ -25,6 +25,11 @@ data "azurerm_app_configuration_key" "Settings_ProjectGatewayIP" {
   key                    = "ProjectGatewayIP"
 }
 
+resource "random_integer" "ResourceSuffix" {
+	min 					= 10000
+	max						= 99999
+}
+
 module "ade_ipalloc" {
 	source = "git::https://git@github.com/carmada-dev/terraform.git//ade_ipalloc?ref=main"
 	configurationStoreId = "${data.azurerm_resource_group.Environment.tags["hidden-ConfigurationStoreId"]}"
@@ -131,10 +136,7 @@ resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
 # 	}
 # }
 
-# resource "random_integer" "ResourceSuffix" {
-# 	min 					= 10000
-# 	max						= 99999
-# }
+
 
 # resource "random_password" "DatabasePassword" {
 # 	length					= 20
