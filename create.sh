@@ -91,7 +91,7 @@ deployEnvironment() {
 	displayHeader "Delete obsolete environments ..."
 	for OBSOLETE in $(az devcenter dev environment list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?starts_with(name, '$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')-')].name" -o tsv | dos2unix); do
 		echo "- $OBSOLETE"
-		az devcenter dev environment delete --dev-center-name $ORGANIZATION --project-name $PROJECT --name $OBSOLETE --yes &
+		az devcenter dev environment delete --dev-center-name $ORGANIZATION --project-name $PROJECT --name $OBSOLETE --yes --no-wait &
 	done; wait
 
 	displayHeader "Deploy environment '$ENVIRONMENTNAME' ..."
