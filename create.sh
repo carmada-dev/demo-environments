@@ -89,10 +89,10 @@ deployEnvironment() {
 	[ -z "$CATALOG" ] && >&2 echo "Unable to find catalog containing environment definition '$ENVIRONMENT'!" && exit 1 || echo $CATALOG
 
 	displayHeader "Delete obsolete environments ..."
-	while read OBSOLETE; do
+	for OBSOLETE in $(az devcenter dev environment list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?starts_with(name, '$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')-')].name" -o tsv | dos2unix); do
 		echo "- $OBSOLETE"
-		az devcenter dev environment delete --dev-center-name $ORGANIZATION --project-name $PROJECT --name $OBSOLETE --yes --no-wait
-	done < <(az devcenter dev environment list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?starts_with(name, '$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')-')].name" -o tsv)
+		az devcenter dev environment delete --dev-center-name $ORGANIZATION --project-name $PROJECT --name $OBSOLETE --yes &
+	done; wait
 
 	displayHeader "Deploy environment '$ENVIRONMENTNAME' ..."
 	az devcenter dev environment create \
