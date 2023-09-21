@@ -12,8 +12,6 @@ module "ade_environment" {
 
 module "ade_ipalloc" {
 	source = "git::https://git@github.com/carmada-dev/terraform.git//ade_ipalloc?ref=main"
-	configurationStoreId = "${module.ade_environment.ConfigurationStoreId}"
-	configurationLabel = "${module.ade_environment.ConfigurationLabel}"
 	cidrBlocks = [ 25, 25 ]
 }
 
@@ -80,7 +78,7 @@ resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
 
 module "ade_peernetworks" {
 	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_peernetworks?ref=main"
-	hubNetworkId 				= data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value
+	hubNetworkId 				= module.ade_environment.ProjectNetworkId
 	hubPeeringPrefix 			= "environment"
 	spokeNetworkId 				= azurerm_virtual_network.SonarQube.id
 	spokePeeringPrefix 			= "project"
