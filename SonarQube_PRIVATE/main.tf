@@ -8,6 +8,7 @@ data "azuread_service_principal" "MSGraph" {
 
 module "ade_environment" {
 	source = "git::https://git@github.com/carmada-dev/terraform.git//ade_environment?ref=main"
+	resourceGroup = var.resource_group_name
 }
 
 module "ade_ipalloc" {
