@@ -1,7 +1,8 @@
 DEBUG="false"
+CLEAN="false"
 USERID="me"
 
-while getopts 'o:p:e:t:u:d' OPT; do
+while getopts 'o:p:e:t:u:dc' OPT; do
     case "$OPT" in
 		o)
 			ORGANIZATION="${OPTARG}" ;;
@@ -15,6 +16,8 @@ while getopts 'o:p:e:t:u:d' OPT; do
 			USERID="$(az ad user show --id ${OPTARG} --query id -o tsv | dos2unix)" ;;
 		d)
 			DEBUG="true" ;;
+		c)
+			CLEAN="true" ;;
     esac
 done
 
@@ -88,11 +91,13 @@ deployEnvironment() {
 	CATALOG="$(az devcenter dev environment-definition list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?name=='$ENVIRONMENT']|[0].catalogName" -o tsv)"
 	[ -z "$CATALOG" ] && >&2 echo "Unable to find catalog containing environment definition '$ENVIRONMENT'!" && exit 1 || echo $CATALOG
 
-	displayHeader "Delete obsolete environments ..."
-	for OBSOLETE in $(az devcenter dev environment list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?starts_with(name, '$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')-')].name" -o tsv | dos2unix); do
-		echo "- $OBSOLETE"
-		az devcenter dev environment delete --dev-center-name $ORGANIZATION --project-name $PROJECT --name $OBSOLETE --yes --no-wait &
-	done; wait
+	if [ "$CLEAN" == "true" ]; then
+		displayHeader "Delete obsolete environments ..."
+		for OBSOLETE in $(az devcenter dev environment list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?starts_with(name, '$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')-')].name" -o tsv | dos2unix); do
+			echo "- $OBSOLETE"
+			az devcenter dev environment delete --dev-center-name $ORGANIZATION --project-name $PROJECT --name $OBSOLETE --yes --no-wait &
+		done; wait
+	fi
 
 	displayHeader "Deploy environment '$ENVIRONMENTNAME' ..."
 	az devcenter dev environment create \

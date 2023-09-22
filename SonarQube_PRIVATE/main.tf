@@ -18,32 +18,32 @@ module "ade_ipalloc" {
 }
 
 resource "azurerm_route_table" "SonarQube" {
-  	name                    	= "sonarqube-${module.ade_environment.EnvironmentSuffix}-route"
-	location            		= module.ade_environment.EnvironmentLocation
-	resource_group_name 		= module.ade_environment.EnvironmentName
+  	name                    	= "sonarqube-${module.ade_environment.Environment.Suffix}-route"
+	location            		= module.ade_environment.Environment.Location
+	resource_group_name 		= module.ade_environment.Environment.Name
 
 	route {
 		name           			= "default"
 		address_prefix 			= "0.0.0.0/0"
 		next_hop_type  			= "VirtualAppliance"
-		next_hop_in_ip_address 	= module.ade_environment.ProjectGatewayIP
+		next_hop_in_ip_address 	= module.ade_environment.Settings["ProjectGatewayIP"]
 	}
 }
 
 resource "azurerm_virtual_network" "SonarQube" {
-	name                		= "sonarqube-${module.ade_environment.EnvironmentSuffix}-net"
-	location            		= module.ade_environment.EnvironmentLocation
-	resource_group_name 		= module.ade_environment.EnvironmentName
+	name                		= "sonarqube-${module.ade_environment.Environment.Suffix}-net"
+	location            		= module.ade_environment.Environment.Location
+	resource_group_name 		= module.ade_environment.Environment.Name
 
 	depends_on 					= [ module.ade_ipalloc ]
 
 	address_space       		= module.ade_ipalloc.IPRanges
-	dns_servers         		= ["168.63.129.16", module.ade_environment.ProjectGatewayIP]
+	dns_servers         		= ["168.63.129.16", module.ade_environment.Settings["ProjectGatewayIP"]]
 }
 
 resource "azurerm_subnet" "SonarQube_Default" {
 	name                 		= "default"
-	resource_group_name 		= module.ade_environment.EnvironmentName
+	resource_group_name 		= module.ade_environment.Environment.Name
 
 	depends_on 					= [ module.ade_ipalloc ]
 
@@ -58,7 +58,7 @@ resource "azurerm_subnet_route_table_association" "SonarQube_Default_Routes" {
 
 resource "azurerm_subnet" "SonarQube_WebServer" {
 	name                 		= "webserver"
-	resource_group_name 		= module.ade_environment.EnvironmentName
+	resource_group_name 		= module.ade_environment.Environment.Name
 
 	depends_on 					= [ module.ade_ipalloc ]
 
@@ -80,7 +80,7 @@ resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
 
 module "ade_peernetworks" {
 	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_peernetworks?ref=main"
-	hubNetworkId 				= module.ade_environment.ProjectNetworkId
+	hubNetworkId 				= module.ade_environment.Settings["ProjectNetworkId"]
 	hubPeeringPrefix 			= "environment"
 	spokeNetworkId 				= azurerm_virtual_network.SonarQube.id
 	spokePeeringPrefix 			= "project"
@@ -89,8 +89,8 @@ module "ade_peernetworks" {
 data "external" "DNSZoneDatabase" {
 	program 					= [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
 	query = {
-	  RESOURCEGROUPID 			= module.ade_environment.PrivateLinkDnsZoneRG
-	  PROJECTNETWORKID 			= module.ade_environment.ProjectNetworkId
+	  RESOURCEGROUPID 			= module.ade_environment.Settings["PrivateLinkDnsZoneRG"]
+	  PROJECTNETWORKID 			= module.ade_environment.Settings["ProjectNetworkId"]
 	  PRIVATENETWORKID 			= azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME 				= "privatelink.database.windows.net"
 	}
@@ -99,8 +99,8 @@ data "external" "DNSZoneDatabase" {
 data "external" "DNSZoneApplication" {
 	program 					= [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
 	query = {
-	  RESOURCEGROUPID 			= module.ade_environment.PrivateLinkDnsZoneRG
-	  PROJECTNETWORKID 			= module.ade_environment.ProjectNetworkId
+	  RESOURCEGROUPID 			= module.ade_environment.Settings["PrivateLinkDnsZoneRG"]
+	  PROJECTNETWORKID 			= module.ade_environment.Settings["ProjectNetworkId"]
 	  PRIVATENETWORKID 			= azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME 				= "privatelink.azurewebsites.net"
 	}
@@ -109,8 +109,8 @@ data "external" "DNSZoneApplication" {
 data "external" "DNSZoneApplicationSCM" {
 	program 					= [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
 	query = {
-	  RESOURCEGROUPID 			= module.ade_environment.PrivateLinkDnsZoneRG
-	  PROJECTNETWORKID 			= module.ade_environment.ProjectNetworkId
+	  RESOURCEGROUPID 			= module.ade_environment.Settings["PrivateLinkDnsZoneRG"]
+	  PROJECTNETWORKID 			= module.ade_environment.Settings["ProjectNetworkId"]
 	  PRIVATENETWORKID 			= azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME 				= "scm.privatelink.azurewebsites.net"
 	}
@@ -126,18 +126,18 @@ resource "random_password" "DatabasePassword" {
 
 
 resource "azurerm_service_plan" "SonarQube" {
-	name                		= "sonarqube-${module.ade_environment.EnvironmentSuffix}-srv"
-	location            		= module.ade_environment.EnvironmentLocation
-	resource_group_name 		= module.ade_environment.EnvironmentName
+	name                		= "sonarqube-${module.ade_environment.Environment.Suffix}-srv"
+	location            		= module.ade_environment.Environment.Location
+	resource_group_name 		= module.ade_environment.Environment.Name
 
 	os_type             		= "Linux"
 	sku_name            		= "P1v2"
 }
 
 resource "azurerm_linux_web_app" "SonarQube" {
-	name                		= "sonarqube-${module.ade_environment.EnvironmentSuffix}-web"
-	location            		= module.ade_environment.EnvironmentLocation
-	resource_group_name 		= module.ade_environment.EnvironmentName
+	name                		= "sonarqube-${module.ade_environment.Environment.Suffix}-web"
+	location            		= module.ade_environment.Environment.Location
+	resource_group_name 		= module.ade_environment.Environment.Name
 	
 	service_plan_id 			= azurerm_service_plan.SonarQube.id
 	https_only 					= true
@@ -175,9 +175,9 @@ resource "azurerm_app_service_virtual_network_swift_connection" "SonarQube" {
 }
 
 resource "azurerm_mssql_server" "SonarQube" {
-	name						= "sonarqube-${module.ade_environment.EnvironmentSuffix}-sql"
-	location            		= module.ade_environment.EnvironmentLocation
-	resource_group_name 		= module.ade_environment.EnvironmentName
+	name						= "sonarqube-${module.ade_environment.Environment.Suffix}-sql"
+	location            		= module.ade_environment.Environment.Location
+	resource_group_name 		= module.ade_environment.Environment.Name
 
 	version                      	= "12.0"
 	administrator_login          	= "SonarQube"
@@ -197,8 +197,8 @@ resource "azurerm_mssql_database" "SonarQube" {
 }
 
 resource "azuread_application" "SonarQube" {
-	display_name 				= "${module.ade_environment.EnvironmentName}-${azurerm_linux_web_app.SonarQube.default_hostname}"
-	identifier_uris  			= [ "api://${module.ade_environment.EnvironmentName}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
+	display_name 				= "${module.ade_environment.Environment.Name}-${azurerm_linux_web_app.SonarQube.default_hostname}"
+	identifier_uris  			= [ "api://${module.ade_environment.Environment.Name}-${azurerm_linux_web_app.SonarQube.default_hostname}" ]
 	# owners 							= [ data.azuread_client_config.Current.object_id ]
 	sign_in_audience 			= "AzureADMyOrg"
 
@@ -254,8 +254,8 @@ resource "null_resource" "SonarQubeInit" {
 
 resource "azurerm_private_endpoint" "SonarQubePL_Database" {
 	name 						= "${azurerm_mssql_server.SonarQube.name}"
-	location            		= module.ade_environment.EnvironmentLocation
-	resource_group_name 		= module.ade_environment.EnvironmentName
+	location            		= module.ade_environment.Environment.Location
+	resource_group_name 		= module.ade_environment.Environment.Name
 
 	subnet_id 					= azurerm_subnet.SonarQube_Default.id
 
@@ -274,8 +274,8 @@ resource "azurerm_private_endpoint" "SonarQubePL_Database" {
 
 resource "azurerm_private_endpoint" "SonarQubePL_Application" {
 	name 						= "${azurerm_linux_web_app.SonarQube.name}"
-	location            		= module.ade_environment.EnvironmentLocation
-	resource_group_name 		= module.ade_environment.EnvironmentName
+	location            		= module.ade_environment.Environment.Location
+	resource_group_name 		= module.ade_environment.Environment.Name
 
 	subnet_id 					= azurerm_subnet.SonarQube_Default.id
 
