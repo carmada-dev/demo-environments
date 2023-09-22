@@ -26,7 +26,7 @@ resource "azurerm_route_table" "SonarQube" {
 		name           			= "default"
 		address_prefix 			= "0.0.0.0/0"
 		next_hop_type  			= "VirtualAppliance"
-		next_hop_in_ip_address 	= data.azurerm_app_configuration_key.Settings_ProjectGatewayIP.value
+		next_hop_in_ip_address 	= module.ade_environment.ProjectGatewayIP
 	}
 }
 
@@ -38,7 +38,7 @@ resource "azurerm_virtual_network" "SonarQube" {
 	depends_on 					= [ module.ade_ipalloc ]
 
 	address_space       		= module.ade_ipalloc.IPRanges
-	dns_servers         		= ["168.63.129.16", data.azurerm_app_configuration_key.Settings_ProjectGatewayIP.value]
+	dns_servers         		= ["168.63.129.16", module.ade_environment.ProjectGatewayIP]
 }
 
 resource "azurerm_subnet" "SonarQube_Default" {
@@ -89,8 +89,8 @@ module "ade_peernetworks" {
 data "external" "DNSZoneDatabase" {
 	program 					= [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
 	query = {
-	  RESOURCEGROUPID 			= "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
-	  PROJECTNETWORKID 			= "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  RESOURCEGROUPID 			= module.ade_environment.PrivateLinkDnsZoneRG
+	  PROJECTNETWORKID 			= module.ade_environment.ProjectNetworkId
 	  PRIVATENETWORKID 			= azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME 				= "privatelink.database.windows.net"
 	}
@@ -99,8 +99,8 @@ data "external" "DNSZoneDatabase" {
 data "external" "DNSZoneApplication" {
 	program 					= [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
 	query = {
-	  RESOURCEGROUPID 			= "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
-	  PROJECTNETWORKID 			= "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  RESOURCEGROUPID 			= module.ade_environment.PrivateLinkDnsZoneRG
+	  PROJECTNETWORKID 			= module.ade_environment.ProjectNetworkId
 	  PRIVATENETWORKID 			= azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME 				= "privatelink.azurewebsites.net"
 	}
@@ -109,8 +109,8 @@ data "external" "DNSZoneApplication" {
 data "external" "DNSZoneApplicationSCM" {
 	program 					= [ "bash", "${path.module}/scripts/EnsurePrivateDnsZone.sh"]
 	query = {
-	  RESOURCEGROUPID 			= "${data.azurerm_app_configuration_key.Settings_PrivateLinkResourceGroupId.value}"
-	  PROJECTNETWORKID 			= "${data.azurerm_app_configuration_key.Settings_ProjectNetworkId.value}"
+	  RESOURCEGROUPID 			= module.ade_environment.PrivateLinkDnsZoneRG
+	  PROJECTNETWORKID 			= module.ade_environment.ProjectNetworkId
 	  PRIVATENETWORKID 			= azurerm_virtual_network.SonarQube.id
 	  DNSZONENAME 				= "scm.privatelink.azurewebsites.net"
 	}
