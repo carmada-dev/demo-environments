@@ -3,17 +3,18 @@ data "azuread_client_config" "Current" {}
 data "azuread_application_published_app_ids" "well_known" {}
 
 data "azuread_service_principal" "MSGraph" {
-  application_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+  application_id 				= data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
 } 
 
 module "ade_environment" {
-	source = "git::https://git@github.com/carmada-dev/terraform.git//ade_environment?ref=main"
-	resourceGroup = var.resource_group_name
+	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_environment?ref=main"
+	resourceGroup 				= var.resource_group_name
 }
 
 module "ade_ipalloc" {
-	source = "git::https://git@github.com/carmada-dev/terraform.git//ade_ipalloc?ref=main"
-	cidrBlocks = [ 25, 25 ]
+	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_ipalloc?ref=main"
+	resourceGroup 				= var.resource_group_name
+	cidrBlocks 					= [ 25, 25 ]
 }
 
 resource "azurerm_route_table" "SonarQube" {
