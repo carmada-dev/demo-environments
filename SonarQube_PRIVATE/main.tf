@@ -78,12 +78,10 @@ resource "azurerm_subnet_route_table_association" "SonarQube_WebServer_Routes" {
   route_table_id 				= azurerm_route_table.SonarQube.id
 }
 
-module "ade_peerNetworks" {
-	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_peerNetworks?ref=main"
-	hubNetworkId 				= module.ade_context.Settings["ProjectNetworkId"]
-	hubPeeringPrefix 			= "environment"
-	spokeNetworkId 				= azurerm_virtual_network.SonarQube.id
-	spokePeeringPrefix 			= "project"
+module "ade_peerNetwork" {
+	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_peerNetwork?ref=main"
+	resourceGroup 				= var.resource_group_name
+	networkName					= azurerm_virtual_network.SonarQube.name
 }
 
 module "ade_linkDnsZone_database" {
