@@ -2,20 +2,20 @@ data "azuread_client_config" "Current" {}
 
 data "azuread_application_published_app_ids" "well_known" {}
 
-# data "azuread_service_principal" "MSGraph" {
-#   application_id 				= data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
-# } 
+data "azuread_service_principal" "MSGraph" {
+  application_id 				= data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+} 
 
-# module "ade_context" {
-# 	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_context?ref=main"
-# 	resourceGroup 				= var.resource_group_name
-# }
+module "ade_context" {
+	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_context?ref=main"
+	resourceGroup 				= var.resource_group_name
+}
 
-# module "ade_allocateIpRange" {
-# 	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_allocateIpRange?ref=main"
-# 	resourceGroup 				= var.resource_group_name
-# 	cidrBlocks 					= [ 25, 25 ]
-# }
+module "ade_allocateIpRange" {
+	source 						= "git::https://git@github.com/carmada-dev/terraform.git//ade_allocateIpRange?ref=main"
+	resourceGroup 				= var.resource_group_name
+	cidrBlocks 					= [ 25, 25 ]
+}
 
 # resource "azurerm_route_table" "SonarQube" {
 #   	name                    	= "sonarqube-${module.ade_context.Environment.Suffix}-route"
