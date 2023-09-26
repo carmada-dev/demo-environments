@@ -241,52 +241,52 @@ resource "null_resource" "SonarQubeInit" {
 	]
 }
 
-resource "azurerm_private_endpoint" "SonarQubePL_Database" {
-	name 						= "${azurerm_mssql_server.SonarQube.name}"
-	location            		= module.ade_context.Environment.Location
-	resource_group_name 		= module.ade_context.Environment.Name
+# resource "azurerm_private_endpoint" "SonarQubePL_Database" {
+# 	name 						= "${azurerm_mssql_server.SonarQube.name}"
+# 	location            		= module.ade_context.Environment.Location
+# 	resource_group_name 		= module.ade_context.Environment.Name
 
-	subnet_id 					= azurerm_subnet.SonarQube_Default.id
+# 	subnet_id 					= azurerm_subnet.SonarQube_Default.id
 
-	private_service_connection {
-		name 							= "default"
-		is_manual_connection 			= "false"
-		private_connection_resource_id 	= azurerm_mssql_server.SonarQube.id
-		subresource_names 				= [ "sqlServer" ]
-	}
+# 	private_service_connection {
+# 		name 							= "default"
+# 		is_manual_connection 			= "false"
+# 		private_connection_resource_id 	= azurerm_mssql_server.SonarQube.id
+# 		subresource_names 				= [ "sqlServer" ]
+# 	}
 
-	private_dns_zone_group {
-		name                 	= "default"
-		private_dns_zone_ids 	= [ module.ade_linkDnsZone_database.DnsZoneId ]
-  	}
-}
+# 	private_dns_zone_group {
+# 		name                 	= "default"
+# 		private_dns_zone_ids 	= [ module.ade_linkDnsZone_database.DnsZoneId ]
+#   	}
+# }
 
-resource "azurerm_private_endpoint" "SonarQubePL_Application" {
-	name 						= "${azurerm_linux_web_app.SonarQube.name}"
-	location            		= module.ade_context.Environment.Location
-	resource_group_name 		= module.ade_context.Environment.Name
+# resource "azurerm_private_endpoint" "SonarQubePL_Application" {
+# 	name 						= "${azurerm_linux_web_app.SonarQube.name}"
+# 	location            		= module.ade_context.Environment.Location
+# 	resource_group_name 		= module.ade_context.Environment.Name
 
-	subnet_id 					= azurerm_subnet.SonarQube_Default.id
+# 	subnet_id 					= azurerm_subnet.SonarQube_Default.id
 
-	private_service_connection {
-		name 							= "default"
-		is_manual_connection 			= "false"
-		private_connection_resource_id 	= azurerm_linux_web_app.SonarQube.id
-		subresource_names 				= [ "sites" ]
-	}
+# 	private_service_connection {
+# 		name 							= "default"
+# 		is_manual_connection 			= "false"
+# 		private_connection_resource_id 	= azurerm_linux_web_app.SonarQube.id
+# 		subresource_names 				= [ "sites" ]
+# 	}
 
-	private_dns_zone_group {
-		name                 	= "default"
-		private_dns_zone_ids 	= [ 
-			module.ade_linkDnsZone_website.DnsZoneId,
-			module.ade_linkDnsZone_websiteSCM.DnsZoneId
-		]
-  	}
+# 	private_dns_zone_group {
+# 		name                 	= "default"
+# 		private_dns_zone_ids 	= [ 
+# 			module.ade_linkDnsZone_website.DnsZoneId,
+# 			module.ade_linkDnsZone_websiteSCM.DnsZoneId
+# 		]
+#   	}
 
-	depends_on = [ 
-		# we need to wait until sq is initialized 
-		# before we hide it behind a private endpoint
-		null_resource.SonarQubeInit 
-	]
-}
+# 	depends_on = [ 
+# 		# we need to wait until sq is initialized 
+# 		# before we hide it behind a private endpoint
+# 		null_resource.SonarQubeInit 
+# 	]
+# }
 

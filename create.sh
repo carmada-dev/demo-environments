@@ -60,8 +60,8 @@ deployEnvironment() {
 	GRAPH_ROLES+=("$(az ad sp show --id $GRAPH_RESOURCEID --query "appRoles[?value=='Application.ReadWrite.OwnedBy'].id | [0]" -o tsv)")
 	GRAPH_ROLES+=("$(az ad sp show --id $GRAPH_RESOURCEID --query "appRoles[?value=='Application.ReadWrite.All'].id | [0]" -o tsv)")
 
-	while read PRINCIPALID; do
-		echo "- Principal $PRINCIPALID ..."
+	for PRINCIPALID in $(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv | dos2unix); do
+		echo "- Principal $PRINCIPALID"
 		
 		# for AZURE_ROLE in "${AZURE_ROLES[@]}"; do
 
@@ -81,11 +81,9 @@ deployEnvironment() {
 				--url "https://graph.microsoft.com/v1.0/servicePrincipals/$PRINCIPALID/appRoleAssignedTo" \
 				--headers 'Content-Type=application/json' \
 				--body "{ 'principalId': '$PRINCIPALID', 'resourceId': '$GRAPH_RESOURCEID', 'appRoleId': '$GRAPH_ROLE' }" \
-				--output none 2> /dev/null
+				--output none 2> /dev/null &
 		done
-
-		echo "... done"		
-	done < <(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv) && sleep 30
+	done && wait && sleep 30
 
 	displayHeader "Resolve catalog name ..."
 	CATALOG="$(az devcenter dev environment-definition list --dev-center-name $ORGANIZATION --project-name $PROJECT --query "[?name=='$ENVIRONMENT']|[0].catalogName" -o tsv)"
@@ -110,7 +108,6 @@ deployEnvironment() {
 		--parameters $PARAMETERS \
 		--user-id $USERID \
 		$DEBUGARG
-
 
 	popd > /dev/null
 
