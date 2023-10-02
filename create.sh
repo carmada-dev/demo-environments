@@ -47,7 +47,7 @@ deployEnvironment() {
 		az devcenter admin catalog sync --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP_DEVCENTER --catalog-name $CATALOGITEM &
 	done < <(az devcenter admin catalog list --dev-center $ORGANIZATION --resource-group $RESOURCEGROUP_DEVCENTER --query '[].name' -o tsv) && wait
 
-	displayHeader "Ensure Azure AD permissions ..."
+	
 
 	AZURE_ROLES=()
 	AZURE_ROLES+=('158c047a-c907-4556-b7ef-446551a6b5f7') # Application Administrator Role
@@ -60,23 +60,20 @@ deployEnvironment() {
 	GRAPH_ROLES+=("$(az ad sp show --id $GRAPH_RESOURCEID --query "appRoles[?value=='Application.ReadWrite.OwnedBy'].id | [0]" -o tsv)")
 	GRAPH_ROLES+=("$(az ad sp show --id $GRAPH_RESOURCEID --query "appRoles[?value=='Application.ReadWrite.All'].id | [0]" -o tsv)")
 
+	displayHeader "Ensure Azure AD permissions ..."
 	for PRINCIPALID in $(az devcenter admin project-environment-type list --project-name $PROJECT --resource-group $RESOURCEGROUP_DEVPROJECT --query '[].identity.principalId' -o tsv | dos2unix); do
-		echo "- Principal $PRINCIPALID"
-		
 		# for AZURE_ROLE in "${AZURE_ROLES[@]}"; do
-
-		# 	echo "Azure role $AZURE_ROLE" && az rest \
+		# 	echo "- Assign principal $PRINCIPALID to role $AZURE_ROLE"
+		# 	az rest \
 		# 		--method post \
 		# 		--uri https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments \
 		# 		--headers "{ 'content-type': 'application/json' }" \
 		# 		--body "{ '@odata.type': '#microsoft.graph.unifiedRoleAssignment', 'roleDefinitionId': '$AZURE_ROLE', 'principalId': '$PRINCIPALID', 'directoryScopeId': '/' }" \
-		# 		--output none 2> /dev/null
-
+		# 		--output none 2> /dev/null &
 		# done
-
 		for GRAPH_ROLE in "${GRAPH_ROLES[@]}"; do
-
-			echo "Graph role $GRAPH_ROLE" && az rest \
+			echo "- Assign principal $PRINCIPALID to role $GRAPH_ROLE (Graph)"
+			az rest \
 				--method post \
 				--url "https://graph.microsoft.com/v1.0/servicePrincipals/$PRINCIPALID/appRoleAssignedTo" \
 				--headers 'Content-Type=application/json' \
