@@ -1,4 +1,8 @@
-param image string
+targetScope = 'resourceGroup'
+
+// ============================================================================================
+
+param image string = 'mcr.microsoft.com/appsvc/staticsite:latest'
 
 #disable-next-line no-loc-expr-outside-params
 var resourceLocation = resourceGroup().location
