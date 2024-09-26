@@ -1,12 +1,10 @@
-# yaml-language-server: $schema=https://github.com/Azure/deployment-environments/releases/download/2022-11-11-preview/manifest.schema.json
-
 name: DockerWebSite
 summary: Private app service running a docker container
 description: ...
 templatePath: main.bicep
-
 parameters: 
 - id: "image"
   name: "Docker Image"
   type: "string"
+  required: true
   default: "mcr.microsoft.com/appsvc/staticsite:latest"
