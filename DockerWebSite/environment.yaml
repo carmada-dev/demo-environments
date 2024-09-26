@@ -7,5 +7,4 @@ parameters:
 - id: "image"
   name: "Docker Image"
   type: "string"
-  required: true
   default: "mcr.microsoft.com/appsvc/staticsite:latest"
