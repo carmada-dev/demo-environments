@@ -2,6 +2,7 @@ name: DockerWebSite
 summary: Private app service running a docker container
 description: ...
 templatePath: main.bicep
+runner: Bicep
 parameters: 
 - id: "image"
   name: "Docker Image"

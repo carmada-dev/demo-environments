@@ -2,6 +2,7 @@ name: SampleDatabase
 summary: Sample Azure SQL database
 description: Deploys an Azure SQL database pre-filled with the AdventureWorks dataset
 templatePath: main.bicep
+runner: Bicep
 parameters: 
 - id: "DatabaseUsername"
   name: "Database Username"
